@@ -10,3 +10,5 @@ curl -L "$DOWNLOAD_URL" | gunzip | docker import - $DEFAULT_DOCKER_TAG
 docker tag  $DEFAULT_DOCKER_TAG $DEFAULT_DOCKER_TAG:$TAG_VERSION
 docker run --rm -it $DEFAULT_DOCKER_TAG echo -e '\n\nSuccess.\n'
 
+docker push $DEFAULT_DOCKER_TAG $DEFAULT_DOCKER_TAG:$TAG_VERSION
+
