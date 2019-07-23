@@ -1,18 +1,25 @@
 #! /bin/bash
+# remember and change path
+CURRENTPATH=$(pwd)
+SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPTPATH"
 
-# config - see https://alpinelinux.org/downloads/ for suitable binaries
-DOWNLOAD_URL=http://dl-cdn.alpinelinux.org/alpine/v3.10/releases/armv7/alpine-minirootfs-3.10.1-armv7.tar.gz
-DEFAULT_DOCKER_TAG=armv7lxu4/alpine-base-armv7
-TAG_VERSION=3.10.1
-
-# misc
+# config
+set -e
+source build.config
 export DOCKER_BUILDKIT=1
 
-# download binaries and create image
-curl -L "$DOWNLOAD_URL" | gunzip | docker import - $DEFAULT_DOCKER_TAG
-docker tag  $DEFAULT_DOCKER_TAG $DEFAULT_DOCKER_TAG:$TAG_VERSION
-docker tag  $DEFAULT_DOCKER_TAG $DEFAULT_DOCKER_TAG:latest
-docker run --rm -it $DEFAULT_DOCKER_TAG echo -e '\n\nSuccess.\n'
+# check for existing image
+EXISTING_DOCKER_IMAGE=$(docker images -q "${IMAGE_TAG}:${IMAGE_VERSION}" 2> /dev/null)
+if [[ -z "$EXISTING_DOCKER_IMAGE" ]]; then
+	# download binaries and create image
+	curl -L "$ALPINE_DOWNLOAD_URL" | gunzip | docker import - $IMAGE_TAG
+	docker tag  $IMAGE_TAG $IMAGE_TAG:$IMAGE_VERSION
+	docker tag  $IMAGE_TAG $IMAGE_TAG:latest
+	docker run --rm -it $IMAGE_TAG echo -e '\n\nSuccess.\n'
 
-docker push $DEFAULT_DOCKER_TAG:$TAG_VERSION
-docker push $DEFAULT_DOCKER_TAG:latest
+	docker push $IMAGE_TAG:$IMAGE_VERSION
+	docker push $IMAGE_TAG:latest
+fi
+
+cd "$CURRENTPATH"
