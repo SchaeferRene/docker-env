@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  nginx:
+    image: $DOCKER_ID/nginx:latest
+    build:
+      context: ./nginx
+      args:
+        IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE_NAME
+        IMAGE_VERSION: $ALPINE_VERSION
+        NGINX_MODULES:
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+#    volumes:
+#      - ${DOCKER_VOLUME_ROOT}/nginx/conf.d:/etc/nginx/conf.d
