@@ -13,5 +13,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-#    volumes:
-#      - ${DOCKER_VOLUME_ROOT}/nginx/conf.d:/etc/nginx/conf.d
+    volumes:
+      - ${DOCKER_VOLUME_ROOT}/nginx/conf.d:/etc/nginx/conf.d
+      - ${DOCKER_VOLUME_ROOT}/nginx/www:/nginx/www

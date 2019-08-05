@@ -28,7 +28,8 @@ fi
 export NGINX_MODULES=$(cat nginx-packages.lst | grep "\S" | tr -s '\n' ' ' )
 
 # build and deploy services
-docker-compose --verbose up --build -d
-docker-compose logs
+docker-compose up --build --force-recreate -d
 
 cd "$CURRENTPATH"
+
+docker-compose logs -f
