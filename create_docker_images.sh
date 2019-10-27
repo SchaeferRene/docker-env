@@ -24,7 +24,6 @@ if [[ -z "$EXISTING_DOCKER_IMAGE" ]]; then
 fi
 
 # prepare build vars
-#NGINX_MODULES=$(cat nginx-packages.lst | grep "\S" | sed -e "s/$/-${NGINX_VERSION}-r${NGINX_PKG_RELEASE}/" | tr -s '\n' ' ' )
 export NGINX_MODULES=$(cat nginx-packages.lst | grep "\S" | tr -s '\n' ' ' )
 
 # build and deploy services
@@ -33,3 +32,4 @@ docker-compose up --build --force-recreate -d
 cd "$CURRENTPATH"
 
 docker-compose logs -f
+
