@@ -1,4 +1,4 @@
-ARG IMAGE_TAG=armv7lxu4/alpine-base-armv7
+ARG IMAGE_TAG=reneschaefer/alpine-base
 ARG IMAGE_VERSION=latest
 
 FROM ${IMAGE_TAG}:${IMAGE_VERSION}

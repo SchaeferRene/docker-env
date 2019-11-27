@@ -1,7 +1,11 @@
-# docker-env-odroid-xu4
+# docker-env
 ## About
-`docker-env-odroid-xu4` is my personal playground to create Docker images for Odroid-XU4.
+`docker-env` is my personal playground to create Docker images for different architectures. It has been tested with:
+
+* armv7h (Odroid-XU4)
+* x86_64 (Schenker XMG)
+
 
 ## Whats in it?
-* Script to create alpine based armv7 docker base image from scratch
-
+* Script to create alpine based docker base image from scratch
+* build nginx image on top of base image
