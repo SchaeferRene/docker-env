@@ -2,7 +2,7 @@ version: '3'
 
 services:
   nginx:
-    image: $DOCKER_ID/nginx-alpine-$ALPINE_VERSION-$ARCH:latest
+    image: $NGINX_IMAGE
     build:
       context: ./nginx
       args:
