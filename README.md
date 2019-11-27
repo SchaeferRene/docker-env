@@ -16,6 +16,7 @@ Run the ain script `create_docker_images.sh` as a docker enabled user in order t
 * `-h` | `--help` - display help
 * `-p` | `--push` - push created images to docker registry
 * `-l` | `--logs` - once deployed, follow the logs of deployed services
+* `-r` | `--run`  - run crated image for further evaluation
 * `--nginx` - build nginx service
 
 ## set_env.sh
