@@ -7,7 +7,6 @@ ARG NGINX_MODULES
 ENV NGINX_MODULES $NGINX_MODULES
 
 RUN set -x \
-    #&& apk update \
     && apk add --no-cache $NGINX_MODULES \
     && mkdir -p /nginx/www/ /run/nginx/
 

@@ -15,7 +15,9 @@ function usage () {
 	echo "  -p, --push		Push built images to docker registry"
 	echo "  -l, --logs		follow logs of built and deployed services"
 	echo "  -r, --run       Run created base image for further evaluation"
+	echo "  -r, --run       Run created base image for further evaluation"
 	echo "      --nginx		Build nginx image"
+	echo "      --gitea		Build gitea image"
 	exit
 }
 
@@ -28,8 +30,9 @@ source set_env.sh
 PUSH_IMAGES=0
 FOLLOW_LOGS=0
 RUN_BASE=0
-COMPOSE_FILES=""
-PUSH_IMAGE_TAGS=()
+
+# collect features to build (including dependent services)
+FEATURES=()
 
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -47,9 +50,11 @@ while [[ $# -gt 0 ]]; do
         RUN_BASE=1
         ;;
         --nginx)
-	    COMPOSE_FILES="$COMPOSE_FILES -f docker-compose-nginx.yml"
-	    PUSH_IMAGE_TAGS+=("$NGINX_IMAGE")
+        FEATURES+=("nginx")
         ;;
+#        --gitea)
+#        FEATURES+=("gitea")
+#        ;;
         *)
         echo "Unknown option '$key'" >&2
         usage
@@ -93,12 +98,16 @@ if [ $PUSH_IMAGES -ne 0 ]; then
 	docker push $BASE_IMAGE:latest
 fi
 
+# prepare features to build and images to push
+COMPOSE_FILES=$(for f in ${FEATURES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do echo -n "-f docker-compose-${FEATURE}.yml "; done)
+PUSH_IMAGE_TAGS=$(for f in ${FEATURES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}" "; done)
+
 # build and deploy services
 if [ -n "$COMPOSE_FILES" ]; then
 	docker-compose $COMPOSE_FILES up --build --force-recreate -d
 	
 	if [ $PUSH_IMAGES -ne 0 ]; then
-		for tag in "${PUSH_IMAGE_TAGS[@]}"
+		for tag in ${PUSH_IMAGE_TAGS}
 		do
 	   		docker push $tag
 		done

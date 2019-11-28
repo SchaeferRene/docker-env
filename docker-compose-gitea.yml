@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  nginx:
+    image: $GITEA_IMAGE
+    build:
+      context: ./gitea
+      args:
+        IMAGE_TAG: $BASE_IMAGE
+        IMAGE_VERSION: $ALPINE_VERSION
+    restart: unless-stopped
+    ports:
+      - "22:22"
+      - "3000:3000"
