@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  mpd:
+    image: $MPD_IMAGE
+    build:
+      context: ./mpd
+      args:
+        IMAGE_TAG: $BASE_IMAGE
+        IMAGE_VERSION: $ALPINE_VERSION
+        PULSE_UUID:
+        PULSE_GUID:
+    restart: unless-stopped
+    environment:
+      PULSE_SERVER: ${PULSE_SOCKET}
+    ports:
+      - "6600:6600"
+      - "8800:8800"
+    volumes:
+      - ${PULSE_SOCKET}:/tmp/pulse-socket
+      - ${DOCKER_VOLUME_ROOT}/mpd/music:/var/lib/mpd/music:ro
+      - ${DOCKER_VOLUME_ROOT}/mpd/playlists:/var/lib/mpd/playlists
+      - ${DOCKER_VOLUME_ROOT}/mpd/state:/var/lib/mpd/state

@@ -6,10 +6,15 @@ The scripts have been tested with:
 
 * armv7h (ArchLinux on Odroid-XU4)
 * x86_64 (Manjaro on Schenker XMG)
+* aarch64 (ArchLinux on Odroid-C2)
 
 ## What's in it?
 * Script to create alpine based docker base image from scratch
-* build nginx image on top of base image
+* build mpd image
+
+wip:
+* *build nginx image on top of base image*
+* *build gitea image on top of base image*
 
 ## Prerequisites
 The following programs need to be installed for the scripts to be used:
@@ -40,6 +45,7 @@ Run the ain script `create_docker_images.sh` as a docker enabled user in order t
 * `-p` | `--push` - push created images to docker registry
 * `-l` | `--logs` - once deployed, follow the logs of deployed services
 * `-r` | `--run`  - run created base image for further evaluation
+* `--mpd` - build mpd service
 * `--nginx` - build nginx service
 
 ### `set_env.sh`

@@ -14,10 +14,10 @@ function usage () {
 	echo "  -h, --help		Display help and exit"
 	echo "  -p, --push		Push built images to docker registry"
 	echo "  -l, --logs		follow logs of built and deployed services"
-	echo "  -r, --run       Run created base image for further evaluation"
-	echo "  -r, --run       Run created base image for further evaluation"
-	echo "      --nginx		Build nginx image"
+	echo "  -r, --run       	Run created base image for further evaluation"
 	echo "      --gitea		Build gitea image"
+	echo "      --mpd		Build mpd image"
+	echo "      --nginx		Build nginx image"
 	exit
 }
 
@@ -34,6 +34,10 @@ RUN_BASE=0
 # collect features to build (including dependent services)
 FEATURES=()
 
+if [ $# -eq 0 ]; then
+	usage
+fi
+
 while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -49,12 +53,15 @@ while [[ $# -gt 0 ]]; do
         -r|--run)
         RUN_BASE=1
         ;;
-        --nginx)
-        FEATURES+=("nginx")
-        ;;
 #        --gitea)
 #        FEATURES+=("gitea")
 #        ;;
+        --mpd)
+        FEATURES+=("mpd")
+        ;;
+        --nginx)
+        FEATURES+=("nginx")
+        ;;
         *)
         echo "Unknown option '$key'" >&2
         usage
@@ -74,6 +81,7 @@ then
 fi
 
 # check download URL
+echo "Trying to download base image from $ALPINE_DOWNLOAD_URL"
 if curl --output /dev/null --silent --head --fail "$ALPINE_DOWNLOAD_URL"
 then
     echo "Using base image from $ALPINE_DOWNLOAD_URL"
@@ -109,7 +117,7 @@ if [ -n "$COMPOSE_FILES" ]; then
 	if [ $PUSH_IMAGES -ne 0 ]; then
 		for tag in ${PUSH_IMAGE_TAGS}
 		do
-	   		docker push $tag
+	   		docker push "$tag:latest"
 		done
 	fi
 else
