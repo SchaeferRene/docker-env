@@ -9,12 +9,12 @@ The scripts have been tested with:
 * aarch64 (ArchLinux on Odroid-C2)
 
 ## What's in it?
-* Script to create alpine based docker base image from scratch
-* build mpd image
+* Script to create [alpine](https://alpinelinux.org/) based docker base image from scratch
+* build Music Player Deamon [mpd] image, intended mainly as an internet radio player
 
 wip:
-* *build nginx image on top of base image*
-* *build gitea image on top of base image*
+* *build Webserver and reverse proxy [nginx]*
+* *build git hoster [gitea] for your private repositories*
 
 ## Prerequisites
 The following programs need to be installed for the scripts to be used:
@@ -25,7 +25,7 @@ The following programs need to be installed for the scripts to be used:
 * docker-compose
 
 ## Configuration
-### Genral configuration in `.env`
+### General configuration in `.env`
 Central configuration is done in `.env`. This file is loaded both by `set_env.sh` script as well as `docker-compose` command. (*see: [Docker compose environment variables](https://docs.docker.com/compose/environment-variables/)*)
 
 The `.env` file contains the following variables:
@@ -33,11 +33,17 @@ The `.env` file contains the following variables:
 * `ALPINE_VERSION` - the alpine version to build all images based on
 * `DOCKER_ID` - The [DockerId](https://success.docker.com/article/how-do-you-register-for-a-docker-id) to be used to push the created images<br>(Make sure [log in](https://docs.docker.com/engine/reference/commandline/login/) to your account prior to running these scripts)
 * `DOCKER_VOLUME_ROOT` - the root folder that holds all files and folders mounted into the docker images (see *Service specific configuration*)
+* `PULSE_SOCKET` - the pulse audio socket to be mounted into and used by the docker containers
 
 ### Service specific configuration
+#### Music player Daemon [mpd]
 *tbd*
 
-## Usage
+#### WebServer & Reverse Proxy [nginx]
+*tbd*
+
+
+## Scripts
 ### `create_docker_images.sh`
 Run the ain script `create_docker_images.sh` as a docker enabled user in order to create the docker images. The script can be controlled by the following command line arguments:
 
@@ -50,3 +56,8 @@ Run the ain script `create_docker_images.sh` as a docker enabled user in order t
 
 ### `set_env.sh`
 Source the script `set_env.sh` to have the environment variables set, so you can run docker-compose commands on your own.
+
+
+[gitea]: https://gitea.io/en-us/
+[mpd]: https://www.musicpd.org
+[nginx]: https://www.nginx.com/
