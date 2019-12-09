@@ -5,6 +5,7 @@ source .env
 
 # prepare image names
 export ARCH=$(uname -m)
+if [ "$ARCH" = "armv7l" ]; then export ARCH="armv7"; fi
 export BASE_IMAGE="$DOCKER_ID/alpine-base-$ARCH"
 
 export GITEA_IMAGE="$DOCKER_ID/gitea-alpine-$ALPINE_VERSION-$ARCH"
