@@ -10,7 +10,7 @@ ENV PULSE_UUID $PULSE_UUID
 ARG PULSE_GUID
 ENV PULSE_GUID $PULSE_GUID
 
-EXPOSE 6600 8800
+EXPOSE 6600 8080
 
 RUN set -xe \
     && addgroup -g $PULSE_GUID -S mpd \
@@ -27,6 +27,8 @@ RUN set -xe \
     && rm -rf /var/cache/apk/*
 
 COPY root/ /
+
+User mpd
 
 ENTRYPOINT [ "/sbin/tini", "--", "/usr/local/bin/mpd-watchdog.sh" ]
 
