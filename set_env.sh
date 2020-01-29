@@ -26,14 +26,14 @@ FEATURES=()
 ## nginx
 if [ -f nginx-packages.lst ]; then
 	export NGINX_MODULES=$(cat nginx-packages.lst | grep "\S" | tr -s '\n' ' ' )
-	FEATURES+=nginx
+	FEATURES+=(nginx)
 fi
 
 ## mpd
 if [ -e "$PULSE_SOCKET" ]; then
 	export PULSE_UUID=$(stat -c %u "$PULSE_SOCKET" 2>/dev/null)
 	export PULSE_GUID=$(stat -c %g "$PULSE_SOCKET" 2>/dev/null)
-	FEATURES+=mpd
+	FEATURES+=(mpd)
 fi
 
 # deploy switch
