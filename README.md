@@ -36,7 +36,7 @@ Central configuration is done in `.env`. This file is loaded both by `set_env.sh
 The `.env` file contains the following variables:
 
 * `ALPINE_VERSION` - the alpine version to build all images based on
-* `DOCKER_ID` - The [DockerId](https://success.docker.com/article/how-do-you-register-for-a-docker-id) to be used to push the created images<br>(Make sure [log in](https://docs.docker.com/engine/reference/commandline/login/) to your account prior to running these scripts)
+* `DOCKER_ID` - The [DockerId](https://success.docker.com/article/how-do-you-register-for-a-docker-id) to be used to push the created images<br>(Make sure [log in](https://docs.docker.com/engine/reference/commandline/login/) to your account prior to running these scripts with `--push` option)
 * `DOCKER_VOLUME_ROOT` - the root folder that holds all files and folders mounted into the docker images (see *Service specific configuration*)
 * `PULSE_SOCKET` - the pulse audio socket to be mounted into and used by the docker containers (Default: `/tmp/pulse-socket`)
 
@@ -155,6 +155,7 @@ Run the ain script `create_docker_images.sh` as a docker enabled user in order t
 
 * `-h` | `--help` - display help
 * `-p` | `--push` - push created images to docker registry
+* `-a` | `--all`  - build (and push) all features, though only deploying the ones specified
 * `-l` | `--logs` - once deployed, follow the logs of deployed services
 * `-r` | `--run`  - run created base image for further evaluation
 * `--mpd` - build mpd service
