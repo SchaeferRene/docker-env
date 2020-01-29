@@ -27,6 +27,8 @@ The following programs need to be installed for the scripts to be used:
 ## Configuration
 ### Conventions
 * The scripts expect all files and folders to be mounted into the docker containers to be located below `DOCKER_VOLUME_ROOT`.
+* Images are always built from the latest program versions in the alpine repositories.
+* Images are tagged with the `ALPINE_VERSION` they are created from.
 
 ### General configuration in `.env`
 Central configuration is done in `.env`. This file is loaded both by `set_env.sh` script as well as `docker-compose` command. (*see: [Docker compose environment variables](https://docs.docker.com/compose/environment-variables/)*)
