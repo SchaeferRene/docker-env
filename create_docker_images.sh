@@ -1,10 +1,11 @@
 #! /bin/bash
-# remember and change path
-echo -e "\n... preparing"
-echo -e "... ... checking directories"
-CURRENTPATH=$(pwd)
-SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPTPATH"
+
+### Functions
+function finish {
+	echo -e "\n ... returning to where we started"
+	cd "$CURRENTPATH"
+	echo -e "\n done\n"
+}
 
 # usage
 function usage () {
@@ -24,15 +25,18 @@ function usage () {
 	echo "      --nginx     Build nginx image"
 
 	echo -e "\n... exiting"
-	exit
+	
+	exit 0
 }
 
-# fail on error
-set -e
+### Checks
+echo -e "\n... preparing"
 
-# determine central configuration
-echo "... ... loading central configuration"
-source set_env.sh
+# collect features to build (including dependent services)
+echo -e "... ... evaluating arguments"
+if [ $# -eq 0 ]; then
+	usage
+fi
 
 # setup script vars
 BUILD_ALL=0
@@ -40,12 +44,6 @@ PUSH_IMAGES=0
 FOLLOW_LOGS=0
 RUN_BASE=0
 BUILD_FEATURES=()
-
-# collect features to build (including dependent services)
-echo -e "... ... evaluating arguments"
-if [ $# -eq 0 ]; then
-	usage
-fi
 
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -83,14 +81,39 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# remember and change path
+echo -e "... ... checking directories"
+CURRENTPATH=$(pwd)
+SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+trap finish EXIT
+cd "$SCRIPTPATH"
+
+# determine central configuration
+echo "... ... loading central configuration"
+if [ -f "set_env.sh" ]; then
+	source set_env.sh
+else
+	echo "... ... ... missing set_env.sh" >&2
+	exit 1
+fi
+
 # warn about features not ready to be built
 echo "... ... checking features to be built"
 for f in ${BUILD_FEATURES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do
 	F=$(case "${FEATURES[@]}" in  *"${FEATURE}"*) echo -n "$FEATURE" ;; esac)
 	
 	if [ -z "$F" ]; then
-		echo "... ... ... feature $FEATURE is not prepared to be built! (see README.md)" >&2
-		cd "$CURRENTPATH"
+		echo "... ... ... feature $FEATURE is not prepared to be built!" >&2
+		exit 2
+	fi
+done
+
+# check required programs
+echo "... ... checking required programs"
+for P in docker docker-compose curl; do
+	TEST=$(which $P 2>/dev/null)
+	if [ -z "$TEST" ]; then
+		echo "... ... ... missing required program $P" >&2
 		exit 3
 	fi
 done
@@ -101,21 +124,31 @@ TEST=$(id | grep '(docker)')
 if [ -z "$TEST" ]
 then
 	echo "... ... ... $USER must belong to docker group" >&2
-	cd "$CURRENTPATH"
-	exit 1
+	exit 4
+fi
+
+# check if docker is running
+echo "... ... checking docker service"
+docker info 2>&1 1>/dev/null
+if [ $? -ne 0 ]
+then
+	echo "... ... ... docker service must be running" >&2
+	exit 5
 fi
 
 # check download URL
-echo "... ... checking Alpine binaries"
+echo "... ... checking Alpine source binaries"
 curl --output /dev/null --silent --head --fail "$ALPINE_DOWNLOAD_URL"
 if [[ $? -ne 0 ]]; then
 	echo "... ... ... Invalid download URL: $ALPINE_DOWNLOAD_URL" >&2
-	cd "$CURRENTPATH"
-	exit 2
+	exit 6
 fi
 
+# start building images
+echo -e "\n... building base images"
+
 # check for existing image
-echo -e "... ... checking existing base image"
+echo -e "... ... checking existing Alpine base image"
 EXISTING_DOCKER_IMAGE=$(docker images -q "${BASE_IMAGE}:${ALPINE_VERSION}" 2> /dev/null)
 if [[ -z "$EXISTING_DOCKER_IMAGE" ]]; then
 	# download binaries and create image
@@ -129,13 +162,14 @@ if [[ -z "$EXISTING_DOCKER_IMAGE" ]]; then
 else
 	echo "... ... ... $EXISTING_DOCKER_IMAGE already exists"
 fi
-
 if [ $PUSH_IMAGES -ne 0 ]; then
 	echo -e "\n... ... pushing $BASE_IMAGE:$ALPINE_VERSION"
 	docker push $BASE_IMAGE:$ALPINE_VERSION
 	echo -e "\n... ... pushing $BASE_IMAGE:latest"
 	docker push $BASE_IMAGE:latest
 fi
+
+# TODO: build further base images once required (GUI, HW-Accel, Builder)
 
 # prepare features to build and images to push
 echo -e "\n... building features"
@@ -187,7 +221,3 @@ then
 	echo -e "\n... following logs"
 	docker-compose $COMPOSE_FILES logs -f
 fi
-
-# get back to where we started
-cd "$CURRENTPATH"
-
