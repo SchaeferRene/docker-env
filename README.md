@@ -6,7 +6,7 @@ The scripts have been tested with:
 
 * armv7h (ArchLinux on Odroid-XU4)
 * x86_64 (Manjaro on Schenker XMG)
-* aarch64 (ArchLinux on Odroid-C2)
+* aarch64 (ArchLinux on Odroid-C2, Manjaro on Raspberry Pi 4)
 
 ## What's in it?
 * Script to create [alpine](https://alpinelinux.org/) based docker base image from scratch
@@ -26,6 +26,7 @@ The following programs need to be installed for the scripts to be used:
 
 ## Configuration
 ### Conventions
+* The user running the scripts must belong to docker group.
 * The scripts expect all files and folders to be mounted into the docker containers to be located below `DOCKER_VOLUME_ROOT`.
 * Images are always built from the latest program versions in the alpine repositories.
 * Images are tagged with the `ALPINE_VERSION` they are created from.
@@ -120,6 +121,15 @@ In order for the mpd image to work, pulse audio socket must be established and m
 	# or
 	pacmd play-sample pulse-hotplug 0
 	```
+	
+10. Optional: Create playlist with your favorite internet radio station(s), e.g. using `vi /srv/docker/mpd/radio.m3u` and adding:
+	```
+    #EXTM3U
+
+	#EXTINF:-1,Radio Bonn/Rhein-Sieg
+	http://rbrs-live.cast.addradio.de/rbrs/live/mp3/high
+    ```
+    (see: [unofficial M3U and PLS specification](http://www.scvi.net/pls.htm))
 
 ### Configuration
 The pulse socket file must be configured as `PULSE_SOCKET` in `.env` file.
