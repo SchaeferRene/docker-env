@@ -94,7 +94,7 @@ docker run --rm -u $UID:$(id -g) -v $PWD:/downloads reneschaefer/youtube-dl-alpi
 For convenience, it is recommended to create an alias e.g. in `~/.bashrc` or `/etc/profile.d/aliases.sh`. For instance:
 
 ```bash
-alias youtube-dl="docker run --rm -u $UID:$(id -g) -v '$(pwd)':/downloads reneschaefer/youtube-dl-alpine-armv7"
+alias youtube-dl='P=$(pwd) docker run --rm -u $UID:$(id -g) -v "$P":/downloads reneschaefer/youtube-dl-alpine-armv7'
 ```
 
 `youtube-dl` can then be used as if it was installed locally, e.g.:
