@@ -2,11 +2,11 @@ version: '3'
 
 services:
   nginx:
-    image: $NGINX_IMAGE
+    image: $DOCKER_ID/$NGINX_IMAGE
     build:
       context: ./nginx
       args:
-        IMAGE_TAG: $BASE_IMAGE
+        IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE
         IMAGE_VERSION: $ALPINE_VERSION
         NGINX_MODULES:
     restart: unless-stopped

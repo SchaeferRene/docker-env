@@ -2,13 +2,13 @@
 
 ### Functions
 function finish {
-	echo -e "\n ... returning to where we started"
+	echo -e "\n... returning to where we started"
 	cd "$CURRENTPATH"
-	echo -e "\n done\n"
+	echo -e "\ndone\n"
 }
 
 # usage
-function usage () {
+function usage {
 	echo -e "\nusage: $0 [OPTIONS|SERVICES]"
 	echo
 	echo "This script generates an alpine base image file and other images based on it and deploys them."
@@ -20,13 +20,76 @@ function usage () {
 	echo "  -l, --logs      follow logs of built and deployed services"
 	echo "  -r, --run       Run created base image for further evaluation"
 	echo "Services:"
-	echo "      --gitea     Build gitea image"
+	#echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
+	echo "      --ydl, --youtube-dl"
+	echo "                  Build youtube-dl image"
 
 	echo -e "\n... exiting"
 	
 	exit 0
+}
+
+function build_image {
+	FEATURE=$1
+	
+	COMPOSE_FILE="docker-compose-${FEATURE}.yml"
+	SCRIPT_FILE="./build/create_${FEATURE}.sh"
+	DOCKER_FILE="${FEATURE}/Dockerfile"
+	
+	IS_BASE_FEATURE=$(case "${BASE_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "BASE" ;; esac)
+	IS_REQUESTED_FEATURE=$(case "${BUILD_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "REQUESTED" ;; esac)
+	
+	if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE$IS_BASE_FEATURE" ]; then
+		if [ -f $COMPOSE_FILE ]; then
+			echo "... ... composing $FEATURE"
+			docker-compose -f $COMPOSE_FILE build
+	
+			tag_image "$FEATURE"
+			
+			DEPLOY_IMAGES+=("$COMPOSE_FILE")
+		elif [ -x "$SCRIPT_FILE" ]; then
+			echo "... ... triggering $SCRIPT_FILE"
+			
+			source "$SCRIPT_FILE"
+			
+			tag_image "$FEATURE"
+		elif [ -r "$DOCKER_FILE" ]; then
+			echo "... ... building $FEATURE"
+			
+			docker build \
+				--pull \
+				--no-cache \
+				--build-arg ARCH=$ARCH \
+				--build-arg DOCKER_ID=$DOCKER_ID \
+				-t $DOCKER_ID/$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"") "$FEATURE"
+			
+			tag_image "$FEATURE"
+		else
+			echo "... ... unable to build $FEATURE" >&2
+			echo -e "... ... skipping\n"
+		fi		
+	fi
+}
+
+function tag_image {
+	FEATURE=$1
+	IMAGE_NAME="$DOCKER_ID/"$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+	
+	for T in latest ${ALPINE_VERSION}; do
+		TAG=$IMAGE_NAME:$T
+		echo -e "... ... ... tagging as $TAG"
+		docker tag $IMAGE_NAME $TAG
+		push_image $TAG
+	done
+}
+
+function push_image {
+	if [ $IS_PUSH_IMAGES -eq 0 ]; then
+		echo -e "\n... ... ... pushing $1"
+		docker push $1
+	fi
 }
 
 ### Checks
@@ -39,11 +102,13 @@ if [ $# -eq 0 ]; then
 fi
 
 # setup script vars
-BUILD_ALL=0
-PUSH_IMAGES=0
-FOLLOW_LOGS=0
-RUN_BASE=0
-BUILD_FEATURES=()
+IS_BUILD_ALL=1
+IS_PUSH_IMAGES=1
+IS_FOLLOW_LOGS=1
+IS_RUN_BASE=1
+BASE_IMAGES=(base)
+BUILD_IMAGES=()
+DEPLOY_IMAGES=()
 
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -52,25 +117,28 @@ while [[ $# -gt 0 ]]; do
         usage
         ;;
         -a|--all)
-        BUILD_ALL=1
+        IS_BUILD_ALL=0
         ;;
         -p|--push)
-        PUSH_IMAGES=1
+        IS_PUSH_IMAGES=0
         ;;
         -l|--logs)
-        FOLLOW_LOGS=1
+        IS_FOLLOW_LOGS=0
         ;;
         -r|--run)
-        RUN_BASE=1
+        IS_RUN_BASE=0
         ;;
 #        --gitea)
-#        BUILD_FEATURES+=("gitea")
+#        BUILD_IMAGES+=("gitea")
 #        ;;
         --mpd)
-        BUILD_FEATURES+=("mpd")
+        BUILD_IMAGES+=("mpd")
         ;;
         --nginx)
-        BUILD_FEATURES+=("nginx")
+        BUILD_IMAGES+=("nginx")
+        ;;
+        --ydl|--youtube-dl)
+        BUILD_IMAGES+=("ydl")
         ;;
         *)
         echo "... ... ... Unknown option '$key'" >&2
@@ -99,7 +167,7 @@ fi
 
 # warn about features not ready to be built
 echo "... ... checking features to be built"
-for f in ${BUILD_FEATURES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do
+for f in ${BUILD_IMAGES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do
 	F=$(case "${FEATURES[@]}" in  *"${FEATURE}"*) echo -n "$FEATURE" ;; esac)
 	
 	if [ -z "$F" ]; then
@@ -136,87 +204,31 @@ then
 	exit 5
 fi
 
-# check download URL
-echo "... ... checking Alpine source binaries"
-curl --output /dev/null --silent --head --fail "$ALPINE_DOWNLOAD_URL"
-if [[ $? -ne 0 ]]; then
-	echo "... ... ... Invalid download URL: $ALPINE_DOWNLOAD_URL" >&2
-	exit 6
-fi
-
 # start building images
+set -e
 echo -e "\n... building base images"
-
-# check for existing image
-echo -e "... ... checking existing Alpine base image"
-EXISTING_DOCKER_IMAGE=$(docker images -q "${BASE_IMAGE}:${ALPINE_VERSION}" 2> /dev/null)
-if [[ -z "$EXISTING_DOCKER_IMAGE" ]]; then
-	# download binaries and create image
-	echo -e "\n... creating new base image"
-	echo -e "... ... building from $ALPINE_DOWNLOAD_URL"
-	curl -L "$ALPINE_DOWNLOAD_URL" | gunzip | docker import - $BASE_IMAGE
-	echo -e "... ... tagging as $BASE_IMAGE:latest"
-	docker tag $BASE_IMAGE $BASE_IMAGE:latest
-	echo -e "... ... tagging as $BASE_IMAGE:$ALPINE_VERSION"
-	docker tag $BASE_IMAGE $BASE_IMAGE:$ALPINE_VERSION
-else
-	echo "... ... ... $EXISTING_DOCKER_IMAGE already exists"
-fi
-if [ $PUSH_IMAGES -ne 0 ]; then
-	echo -e "\n... ... pushing $BASE_IMAGE:$ALPINE_VERSION"
-	docker push $BASE_IMAGE:$ALPINE_VERSION
-	echo -e "\n... ... pushing $BASE_IMAGE:latest"
-	docker push $BASE_IMAGE:latest
-fi
-
-# TODO: build further base images once required (GUI, HW-Accel, Builder)
-
-# prepare features to build and images to push
+for f in ${BASE_IMAGES[@]}; do build_image "$f"; done
 echo -e "\n... building features"
-for f in ${FEATURES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do
-	COMPOSE_FILE="docker-compose-${FEATURE}.yml "
-	IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
-	DEPLOY_FILE=$(case "${BUILD_FEATURES[@]}" in  *"${FEATURE}"*) echo -n "$COMPOSE_FILE" ;; esac)
-	
-	if test -f $COMPOSE_FILE; then
-		if [ $BUILD_ALL -ne 0 -o -n "$DEPLOY_FILE" ]; then
-			echo "... ... building $FEATURE"
-			docker-compose -f $COMPOSE_FILE build
+for f in ${FEATURES[@]}; do echo "$f"; done | sort | uniq | while read F; do build_image "$F"; done
 
-			echo -e "... ... ... tagging as $IMAGE_NAME:latest"
-			docker tag $IMAGE_NAME $IMAGE_NAME:latest
-			echo -e "... ... ... tagging as $IMAGE_NAME:$ALPINE_VERSION"
-			docker tag $IMAGE_NAME $IMAGE_NAME:$ALPINE_VERSION
-			
-			if [ $PUSH_IMAGES -ne 0 ]; then
-				echo -e "\n... ... ... pushing $IMAGE_NAME:$ALPINE_VERSION"
-				docker push $IMAGE_NAME:$ALPINE_VERSION
-				echo -e "\n... ... ... pushing $IMAGE_NAME:latest"
-				docker push $IMAGE_NAME:latest
-			fi
-		fi
-	else
-		echo "... ... missing compose file $COMPOSE_FILE" >&2
-		echo -e "... ... skipping\n"
-	fi
-done
+exit
 
-DEPLOY_FILES=$(for f in ${BUILD_FEATURES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do echo -n "-f docker-compose-${FEATURE}.yml "; done)
+DEPLOY_IMAGES=$(for f in ${BUILD_IMAGES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do echo -n "-f docker-compose-${FEATURE}.yml "; done)
 
-if [ -n "$DEPLOY_FILES" ];
+if [ -n "$DEPLOY_IMAGES" ];
 then
-	echo -e "\n... deploying ${BUILD_FEATURES[@]}"
-	docker-compose $DEPLOY_FILES up -d $DEPLOY_SWITCHES
+	echo -e "\n... deploying ${BUILD_IMAGES[@]}"
+	docker-compose $DEPLOY_IMAGES up -d $DEPLOY_SWITCHES
 fi
 
 # run base image
-if [ $RUN_BASE -ne 0 ]; then
+if [ $IS_RUN_BASE -eq 0 ]; then
 	echo -e "\n... logging into base image"
-	docker run --rm -it $BASE_IMAGE /bin/sh
+	docker run $RUN_SWITCHES -it $BASE_IMAGE /bin/sh
 fi
 
 # follow logs
-if [ -n "$DEPLOY_FILES" -a $FOLLOW_LOGS -ne 0 ];
+if [ -n "$DEPLOY_IMAGES" -a $IS_FOLLOW_LOGS -eq 0 ];
 then
 	echo -e "\n... following logs"
 	docker-compose $COMPOSE_FILES logs -f

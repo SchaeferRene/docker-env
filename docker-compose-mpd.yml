@@ -2,11 +2,11 @@ version: '3'
 
 services:
   mpd:
-    image: $MPD_IMAGE
+    image: $DOCKER_ID/$MPD_IMAGE
     build:
       context: ./mpd
       args:
-        IMAGE_TAG: $BASE_IMAGE
+        IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE
         IMAGE_VERSION: $ALPINE_VERSION
         PULSE_UUID:
         PULSE_GUID:

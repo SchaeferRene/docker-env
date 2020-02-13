@@ -1,5 +1,9 @@
-ARG IMAGE_TAG=reneschaefer/alpine-base
+ARG DOCKER_ID
+ARG ARCH
+ARG IMAGE_TAG=$DOCKER_ID/alpine-base-$ARCH
 ARG IMAGE_VERSION=latest
+
+FROM ${IMAGE_TAG}:${IMAGE_VERSION}
 
 FROM ${IMAGE_TAG}:${IMAGE_VERSION}
 
@@ -11,7 +15,5 @@ RUN set -x \
     && mkdir -p /nginx/www/ /run/nginx/
 
 EXPOSE 80 443
-
-STOPSIGNAL SIGTERM
 
 ENTRYPOINT [ "/usr/sbin/nginx", "-g", "daemon off;" ]

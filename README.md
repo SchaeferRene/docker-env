@@ -11,6 +11,7 @@ The scripts have been tested with:
 ## What's in it?
 * Script to create [alpine](https://alpinelinux.org/) based docker base image from scratch
 * build Music Player Deamon [mpd] image, intended mainly as an internet radio player
+* build youtube-dl
 
 wip:
 * *build Webserver and reverse proxy [nginx]*
@@ -79,6 +80,35 @@ The mpd server can be controlled through one of the many [mpd clients] connectin
 ## WebServer & Reverse Proxy [nginx]
 *tbd*
 
+## Flash Video Downloader `youtube-dl`
+### Description
+`youtube-dl` can be used to download flash videos from the internet (not only youtube).
+
+### Usage
+The `youtube-dl` docker image is only built, not deployed, since it does not provide server functionality. Once the image is built, `youtube-dl` can be used by running:
+
+```bash
+docker run --rm -u $UID:$(id -g) -v $PWD:/downloads reneschaefer/youtube-dl-alpine-<ARCH>
+```
+
+For convenience, it is recommended to create an alias e.g. in `~/.bashrc` or `/etc/profile.d/aliases.sh`. For instance:
+
+```bash
+alias youtube-dl='docker run --rm -u $UID:$(id -g) -v $PWD:/downloads reneschaefer/youtube-dl-alpine-x86_64'
+```
+
+`youtube-dl` can then be used as if it was installed locally, e.g.:
+
+```bash
+# download video:
+youtube-dl <URL>
+
+# list available formats:
+youtube-dl -F <URL>
+
+# download video with particular format:
+youtube-dl -f <FORMAT CODE> <URL>
+```
 
 ## Scripts
 ### `create_docker_images.sh`
@@ -91,6 +121,7 @@ Run the ain script `create_docker_images.sh` as a docker enabled user in order t
 * `-r` | `--run`  - run created base image for further evaluation
 * `--mpd` - build mpd service
 * `--nginx` - build nginx service
+* `--ydl` , `--youtube-dl` - build youtube-dl
 
 ### `set_env.sh`
 Source the script `set_env.sh` to have the environment variables set, so you can run docker-compose commands on your own.

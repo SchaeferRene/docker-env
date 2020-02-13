@@ -2,11 +2,11 @@ version: '3'
 
 services:
   nginx:
-    image: $GITEA_IMAGE
+    image: $DOCKER_ID/$GITEA_IMAGE
     build:
       context: ./gitea
       args:
-        IMAGE_TAG: $BASE_IMAGE
+        IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE
         IMAGE_VERSION: $ALPINE_VERSION
     restart: unless-stopped
     ports:
