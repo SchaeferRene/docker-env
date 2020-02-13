@@ -79,7 +79,7 @@ function tag_image {
 	
 	for T in latest ${ALPINE_VERSION}; do
 		TAG=$IMAGE_NAME:$T
-		echo -e "... ... ... tagging as $TAG"
+		echo -e "\n... ... ... tagging as $TAG"
 		docker tag $IMAGE_NAME $TAG
 		push_image $TAG
 	done
@@ -87,7 +87,7 @@ function tag_image {
 
 function push_image {
 	if [ $IS_PUSH_IMAGES -eq 0 ]; then
-		echo -e "\n... ... ... pushing $1"
+		echo -e "... ... ... pushing $1\n"
 		docker push $1
 	fi
 }
