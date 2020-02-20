@@ -4,7 +4,7 @@
 
 The scripts have been tested with:
 
-* armv7h (ArchLinux on Odroid-XU4)
+* armv7 (ArchLinux on Odroid-XU4, ArchLinux on Odroid-U3)
 * x86_64 (Manjaro on Schenker XMG)
 * aarch64 (ArchLinux on Odroid-C2, Manjaro on Raspberry Pi 4)
 
