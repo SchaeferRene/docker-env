@@ -28,20 +28,4 @@ FEATURES=(ydl)
 ## common - current user/group and path
 export GUID=$(id -g)
 
-## nginx
-if [ -f nginx-packages.lst ]; then
-	export NGINX_MODULES=$(cat nginx-packages.lst | grep "\S" | tr -s '\n' ' ' )
-	FEATURES+=(nginx)
-fi
-
-## mpd
-if [ -e "$PULSE_SOCKET" ]; then
-	export PULSE_UUID=$(stat -c %u "$PULSE_SOCKET" 2>/dev/null)
-	export PULSE_GUID=$(stat -c %g "$PULSE_SOCKET" 2>/dev/null)
-	FEATURES+=(mpd)
-else
-	export PULSE_UUID=$UID
-	export PULSE_GUID=$(id -g)
-	FEATURES+=(mpd)
-fi
-
+source _set_env/set_env_*.sh

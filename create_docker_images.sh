@@ -35,7 +35,7 @@ function build_image {
 	FEATURE=$1
 	
 	COMPOSE_FILE="docker-compose-${FEATURE}.yml"
-	SCRIPT_FILE="./build/create_${FEATURE}.sh"
+	SCRIPT_FILE="./_build/create_${FEATURE}.sh"
 	DOCKER_FILE="${FEATURE}/Dockerfile"
 	
 	IS_BASE_FEATURE=$(case "${BASE_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "BASE" ;; esac)

@@ -51,7 +51,7 @@ _see particular services_
 This mpd docker container is intended for use as an always up and running internet radio. Different from other images, this one is controlled by a watchdog script, which starts mpd if it is not running, triggers play if not playing, and restarts playing if frozen. The original script can be found [here](https://gist.github.com/5ess/7d29a6e285cd641b6e17).
 
 ### Setup
-see [Setup Pulse Audio Socket](doc/SetupPulseAudioSocket.md)
+see [Setup Pulse Audio Socket](_doc/SetupPulseAudioSocket.md)
 
 ### Configuration
 The pulse socket file must be configured as `PULSE_SOCKET` in `.env` file.
