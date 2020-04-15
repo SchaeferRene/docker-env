@@ -28,4 +28,7 @@ FEATURES=(ydl)
 ## common - current user/group and path
 export GUID=$(id -g)
 
-source _set_env/set_env_*.sh
+for FILENAME in _set_env/set_env_*.sh; do
+	#echo "... ... sourcing $FILENAME"
+	source "$FILENAME"
+done
