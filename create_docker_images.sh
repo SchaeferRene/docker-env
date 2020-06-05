@@ -206,14 +206,11 @@ then
 fi
 
 # start building images
-set -e
 echo -e "\n... building base images"
 for f in ${BASE_IMAGES[@]}; do build_image "$f"; done
 
 echo -e "\n... building features"
 for f in ${FEATURES[@]}; do echo "$f"; done | sort | uniq | while read F; do build_image "$F"; done
-
-echo "${DEPLOY_IMAGES}"
 
 if [ -n "$DEPLOY_IMAGES" ];
 then
