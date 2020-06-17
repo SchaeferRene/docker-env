@@ -175,6 +175,7 @@ for f in ${BUILD_IMAGES[@]}; do echo "$f"; done | sort | uniq | while read FEATU
 		exit 2
 	fi
 done
+echo "... ... ... put ${BUILD_IMAGES[@]} on agenda"
 
 # check required programs
 echo "... ... checking required programs"
@@ -205,15 +206,11 @@ then
 fi
 
 # start building images
-set -e
 echo -e "\n... building base images"
 for f in ${BASE_IMAGES[@]}; do build_image "$f"; done
+
 echo -e "\n... building features"
 for f in ${FEATURES[@]}; do echo "$f"; done | sort | uniq | while read F; do build_image "$F"; done
-
-exit
-
-DEPLOY_IMAGES=$(for f in ${BUILD_IMAGES[@]}; do echo "$f"; done | sort | uniq | while read FEATURE; do echo -n "-f docker-compose-${FEATURE}.yml "; done)
 
 if [ -n "$DEPLOY_IMAGES" ];
 then
@@ -233,3 +230,4 @@ then
 	echo -e "\n... following logs"
 	docker-compose $COMPOSE_FILES logs -f
 fi
+
