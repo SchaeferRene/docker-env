@@ -138,6 +138,22 @@ compileMp3Lame() {
 	make && make install
 }
 
+# compile FDK-AAC
+compileFdkAac() {
+	DIR=/tmp/fdkaac
+	mkdir -p "$DIR" && cd "$DIR"
+
+	git clone --depth 1 https://github.com/mstorsjo/fdk-aac
+	cd fdk-aac
+	autoreconf -fiv
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-shared=no \
+		--enable-static=yes
+
+	make && make install
+}
+
 # compile x264
 compileX264() {
 	DIR=/tmp/x264
@@ -184,19 +200,21 @@ compileFfmpeg() {
 		--enable-libfribidi \
 		--enable-libsoxr \
 		--enable-libmp3lame \
+		--enable-libfdk-aac \
 		--enable-libx264 \
 
 	make && make install
 }
 
-#installDependencies
-#dirtyHackForBrotli
+installDependencies
+dirtyHackForBrotli
 
-#compileFreetype2
-#compileFontConfig
+compileFreetype2
+compileFontConfig
 
-#compileMp3Lame
-#compileX264
+compileMp3Lame
+compileFdkAac
+compileX264
 
 compileFfmpeg
 
