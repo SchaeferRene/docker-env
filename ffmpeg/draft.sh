@@ -24,7 +24,6 @@ installDependencies() {
 		wget \
 		tar \
 		yasm \
-		cairo-dev \
 		glib-dev \
 		glib-static \
 		zlib-dev \
@@ -51,6 +50,7 @@ installDependencies() {
 		#fontconfig-dev \
 		#freetype-static \
 		#fontconfig-static \
+		#cairo-dev \
 		#harfbuzz-dev \
 		#harfbuzz-static \
 		#coreutils \
@@ -113,7 +113,19 @@ sanityCheck() {
 		echo "${PREFIX}/bin/ffmpeg -version" && ${PREFIX}/bin/ffmpeg -version
 		echo "${PREFIX}/bin/ffprobe -version" && ${PREFIX}/bin/ffmpeg -version
 
-		for PRG in fc-cache fc-cat fc-list fc-match fc-pattern fc-query fc-scan fc-validate freetype-config ffmpeg ffprobe
+		for PRG in \
+			fc-cache \
+			fc-cat \
+			fc-list \
+			fc-match \
+			fc-pattern \
+			fc-query \
+			fc-scan \
+			fc-validate \
+			freetype-config \
+			ffmpeg \
+			ffprobe \
+			x264
 		do
 			PRG="$PREFIX/bin/$PRG"
 			if [[ -f "$PRG" ]]; then
@@ -123,11 +135,25 @@ sanityCheck() {
 	fi
 }
 
+# compile x264
+compileX264() {
+	DIR=/tmp/ffmpeg
+	mkdir -p "$DIR" && cd "$DIR"
+	
+	git clone --depth 1 https://code.videolan.org/videolan/x264.git
+	cd x264/
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-static \
+		--enable-pic
+
+	make && make install
+}
+
 # compile ffmpeg
 compileFfmpeg() {
 	DIR=/tmp/ffmpeg
-	mkdir -p /tmp/ffmpeg
-	cd /tmp/ffmpeg
+	mkdir -p "$DIR" && cd "$DIR"
 	wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 	tar xjf ffmpeg-snapshot.tar.bz2
 	cd ffmpeg/
@@ -143,6 +169,7 @@ compileFfmpeg() {
 		--disable-shared \
 		--enable-static \
 		--enable-pic \
+		--enable-thumb \
 		--enable-gpl \
 		--enable-nonfree \
 		--enable-version3 \
@@ -151,6 +178,7 @@ compileFfmpeg() {
 		--enable-libxml2 \
 		--enable-libfreetype \
 		--enable-fontconfig \
+		--enable-libx264 \
 
 	make && make install
 }
@@ -160,6 +188,8 @@ dirtyHackForBrotli
 
 compileFreetype2
 compileFontConfig
+
+compileX264
 
 compileFfmpeg
 
