@@ -9,6 +9,8 @@ CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
 PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 LDFLAGS="-Wl,-z,relro,-z,now"
 
+mkdir -p "$PREFIX"
+
 installDependencies() {
 	apk add --no-cache --update \
 		build-base \
@@ -18,11 +20,13 @@ installDependencies() {
 		pkgconfig \
 		libtool \
 		texinfo \
-		glib-static \
 		git \
 		wget \
 		tar \
 		yasm \
+		cairo-dev \
+		glib-dev \
+		glib-static \
 		zlib-dev \
 		zlib-static \
 		openssl \
@@ -35,18 +39,20 @@ installDependencies() {
 		bzip2-static \
 		libpng-dev \
 		libpng-static \
-		harfbuzz-dev \
-		harfbuzz-static \
 		brotli-dev \
 		brotli-static \
 		expat-dev \
 		expat-static \
-		fontconfig-dev \
-		freetype-static \
-		fontconfig-static \
 		libxml2-dev \
 		sdl2-dev \
 		sdl2-static \
+		graphite2-dev \
+		graphite2-static \
+		#fontconfig-dev \
+		#freetype-static \
+		#fontconfig-static \
+		#harfbuzz-dev \
+		#harfbuzz-static \
 		#coreutils \
 		#diffutils \
 		#xz \
@@ -58,8 +64,12 @@ installDependencies() {
 		#fribidi-static \
 		#soxr-dev \
 		#soxr-static \
-		#graphite2-static \
 
+}
+
+dirtyHackForBrotli() {
+	ln -s /usr/lib/libbrotlicommon-static.a /usr/lib/libbrotlicommon.a
+	ln -s /usr/lib/libbrotlidec-static.a /usr/lib/libbrotlidec.a
 }
 
 # compile freetype2
@@ -77,8 +87,8 @@ compileFreetype2() {
 		--with-zlib=yes \
 		--with-bzip2=yes \
 		--with-png=yes \
-		--with-harfbuzz=yes \
-		--with-brotli=yes
+		--with-brotli=yes \
+		#--with-harfbuzz=yes \
 	make && make install
 }
 
@@ -127,6 +137,7 @@ compileFfmpeg() {
 		--prefix="$PREFIX" \
 		--extra-cflags="-I${PREFIX}/include -fopenmp" \
 		--extra-ldflags="-static -fopenmp" \
+		--env=PKG_CONFIG_PATH=$PKG_CONFIG_PATH \
 		--toolchain=hardened \
 		--disable-debug \
 		--disable-shared \
@@ -138,17 +149,17 @@ compileFfmpeg() {
 		--disable-doc \
 		--enable-openssl \
 		--enable-libxml2 \
-		#--enable-libfreetype \
-		#--enable-fontconfig \
+		--enable-libfreetype \
+		--enable-fontconfig \
 
 	make && make install
 }
 
-mkdir -p "$PREFIX"
-
 installDependencies
-#compileFreetype2
-#compileFontConfig
+dirtyHackForBrotli
+
+compileFreetype2
+compileFontConfig
 
 compileFfmpeg
 
