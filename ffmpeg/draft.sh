@@ -47,6 +47,10 @@ installDependencies() {
 		sdl2-static \
 		graphite2-dev \
 		graphite2-static \
+		fribidi-dev \
+		fribidi-static \
+		soxr-dev \
+		soxr-static \
 		#fontconfig-dev \
 		#freetype-static \
 		#fontconfig-static \
@@ -59,11 +63,6 @@ installDependencies() {
 		#nasm \
 		#meson \
 		#ninja \
-		#libxml2-dev \
-		#fribidi-dev \
-		#fribidi-static \
-		#soxr-dev \
-		#soxr-static \
 
 }
 
@@ -113,19 +112,7 @@ sanityCheck() {
 		echo "${PREFIX}/bin/ffmpeg -version" && ${PREFIX}/bin/ffmpeg -version
 		echo "${PREFIX}/bin/ffprobe -version" && ${PREFIX}/bin/ffmpeg -version
 
-		for PRG in \
-			fc-cache \
-			fc-cat \
-			fc-list \
-			fc-match \
-			fc-pattern \
-			fc-query \
-			fc-scan \
-			fc-validate \
-			freetype-config \
-			ffmpeg \
-			ffprobe \
-			x264
+		for PRG in ffmpeg ffprobe
 		do
 			PRG="$PREFIX/bin/$PRG"
 			if [[ -f "$PRG" ]]; then
@@ -135,9 +122,25 @@ sanityCheck() {
 	fi
 }
 
+# compile MP3 Lame
+compileMp3Lame() {
+	DIR=/tmp/mp3lame
+	mkdir -p "$DIR" && cd "$DIR"
+
+	wget https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download -O lame.tar.gz
+	tar xzf lame.tar.gz
+	cd lame*
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-shared=no \
+		--enable-static=yes
+
+	make && make install
+}
+
 # compile x264
 compileX264() {
-	DIR=/tmp/ffmpeg
+	DIR=/tmp/x264
 	mkdir -p "$DIR" && cd "$DIR"
 	
 	git clone --depth 1 https://code.videolan.org/videolan/x264.git
@@ -162,7 +165,7 @@ compileFfmpeg() {
 		--pkg-config-flags=--static \
 		--prefix="$PREFIX" \
 		--extra-cflags="-I${PREFIX}/include -fopenmp" \
-		--extra-ldflags="-static -fopenmp" \
+		--extra-ldflags="-L${PREFIX}/lib -static -fopenmp" \
 		--env=PKG_CONFIG_PATH=$PKG_CONFIG_PATH \
 		--toolchain=hardened \
 		--disable-debug \
@@ -178,18 +181,22 @@ compileFfmpeg() {
 		--enable-libxml2 \
 		--enable-libfreetype \
 		--enable-fontconfig \
+		--enable-libfribidi \
+		--enable-libsoxr \
+		--enable-libmp3lame \
 		--enable-libx264 \
 
 	make && make install
 }
 
-installDependencies
-dirtyHackForBrotli
+#installDependencies
+#dirtyHackForBrotli
 
-compileFreetype2
-compileFontConfig
+#compileFreetype2
+#compileFontConfig
 
-compileX264
+#compileMp3Lame
+#compileX264
 
 compileFfmpeg
 
