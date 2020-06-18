@@ -154,6 +154,37 @@ compileFdkAac() {
 	make && make install
 }
 
+compileOgg() {
+	DIR=/tmp/ogg
+	mkdir -p "$DIR" && cd "$DIR"
+
+	git clone --depth 1 https://github.com/xiph/ogg.git
+	cd ogg
+	./autogen.sh
+	./configure \
+                --prefix="$PREFIX" \
+                --enable-shared=no \
+                --enable-static=yes
+
+	make && make install
+}
+
+compileVorbis() {
+        DIR=/tmp/vorbis
+        mkdir -p "$DIR" && cd "$DIR"
+
+        git clone --depth 1 https://github.com/xiph/vorbis.git
+        cd  vorbis
+
+        ./autogen.sh
+        ./configure \
+                --prefix="$PREFIX" \
+                --enable-shared=no \
+                --enable-static=yes
+
+        make && make install
+}
+
 # compile x264
 compileX264() {
 	DIR=/tmp/x264
@@ -201,6 +232,7 @@ compileFfmpeg() {
 		--enable-libsoxr \
 		--enable-libmp3lame \
 		--enable-libfdk-aac \
+		--enable-libvorbis \
 		--enable-libx264 \
 
 	make && make install
@@ -211,9 +243,12 @@ dirtyHackForBrotli
 
 compileFreetype2
 compileFontConfig
+compileOgg
+compileVorbis
 
 compileMp3Lame
 compileFdkAac
+
 compileX264
 
 compileFfmpeg
