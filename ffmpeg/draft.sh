@@ -174,7 +174,7 @@ compileVorbis() {
         mkdir -p "$DIR" && cd "$DIR"
 
         git clone --depth 1 https://github.com/xiph/vorbis.git
-        cd  vorbis
+        cd vorbis
 
         ./autogen.sh
         ./configure \
@@ -183,6 +183,50 @@ compileVorbis() {
                 --enable-static=yes
 
         make && make install
+}
+
+compileOpus() {
+        DIR=/tmp/opus
+        mkdir -p "$DIR" && cd "$DIR"
+
+        git clone --depth 1 https://github.com/xiph/opus.git
+        cd opus
+
+        ./autogen.sh
+        ./configure \
+                --prefix="$PREFIX" \
+                --enable-shared=no \
+                --enable-static=yes \
+		--disable-doc \
+		--disable-extra-programs
+
+        make && make install
+}
+
+compileTheora() {
+        DIR=/tmp/theora
+        mkdir -p "$DIR" && cd "$DIR"
+
+        git clone --depth 1 https://github.com/xiph/theora.git
+        cd theora
+
+        ./autogen.sh
+        ./configure \
+                --prefix="$PREFIX" \
+                --enable-shared=no \
+                --enable-static=yes \
+		--disable-doc \
+		--disable-examples \
+  		--with-ogg="$PREFIX/lib" \
+  		--with-ogg-libraries="$PREFIX/lib" \
+  		--with-ogg-includes="$PREFIX/include/" \
+  		--with-vorbis="$PREFIX/lib" \
+  		--with-vorbis-libraries="$PREFIX/lib" \
+  		--with-vorbis-includes="$PREFIX/include/"
+
+
+        make && make install
+
 }
 
 # compile x264
@@ -233,25 +277,35 @@ compileFfmpeg() {
 		--enable-libmp3lame \
 		--enable-libfdk-aac \
 		--enable-libvorbis \
+		--enable-libopus \
+		--enable-libtheora \
 		--enable-libx264 \
 
 	make && make install
 }
 
+# prepare
 installDependencies
 dirtyHackForBrotli
 
+# compile supporting libs
 compileFreetype2
 compileFontConfig
+
+# compile audio codecs
 compileOgg
 compileVorbis
-
+compileOpus
+compileTheora
 compileMp3Lame
 compileFdkAac
 
+# compile video codecs
 compileX264
 
+# almost there
 compileFfmpeg
 
+# fingers crossed
 sanityCheck
 
