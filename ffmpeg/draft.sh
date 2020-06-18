@@ -23,6 +23,7 @@ installDependencies() {
 		git \
 		wget \
 		tar \
+		diffutils \
 		yasm \
 		glib-dev \
 		glib-static \
@@ -51,6 +52,7 @@ installDependencies() {
 		fribidi-static \
 		soxr-dev \
 		soxr-static \
+		libvpx-dev \
 		#fontconfig-dev \
 		#freetype-static \
 		#fontconfig-static \
@@ -229,6 +231,33 @@ compileTheora() {
 
 }
 
+# compile VP8/VP9
+compileVpx() {
+	DIR=/tmp/vpx
+	mkdir -p "$DIR" && cd "$DIR"
+
+	git clone https://github.com/webmproject/libvpx.git
+	cd libvpx
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-static \
+		--disable-shared \
+		--disable-examples \
+		--disable-tools \
+		--disable-install-bins \
+		--disable-docs \
+		--target=generic-gnu \
+		--enable-vp8 \
+		--enable-vp9 \
+		--enable-vp9-highbitdepth \
+		--enable-pic \
+		--disable-examples \
+		--disable-docs \
+		--disable-debug
+
+	make && make install
+}
+
 # compile x264
 compileX264() {
 	DIR=/tmp/x264
@@ -263,7 +292,6 @@ compileFfmpeg() {
 		--disable-shared \
 		--enable-static \
 		--enable-pic \
-		--enable-thumb \
 		--enable-gpl \
 		--enable-nonfree \
 		--enable-version3 \
@@ -279,6 +307,7 @@ compileFfmpeg() {
 		--enable-libvorbis \
 		--enable-libopus \
 		--enable-libtheora \
+		--enable-libvpx \
 		--enable-libx264 \
 
 	make && make install
@@ -301,6 +330,7 @@ compileMp3Lame
 compileFdkAac
 
 # compile video codecs
+compileVpx
 compileX264
 
 # almost there
