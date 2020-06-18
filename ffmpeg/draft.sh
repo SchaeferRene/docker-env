@@ -24,6 +24,8 @@ installDependencies() {
 		wget \
 		tar \
 		diffutils \
+		mercurial \
+		nasm \
 		yasm \
 		glib-dev \
 		glib-static \
@@ -273,6 +275,22 @@ compileX264() {
 	make && make install
 }
 
+# compile x265
+compileX265() {
+        DIR=/tmp/x264
+        mkdir -p "$DIR" && cd "$DIR"
+
+	hg clone https://bitbucket.org/multicoreware/x265
+	cd x265/build/linux/
+	cmake -G "Unix Makefiles" \
+		-DENABLE_SHARED=OFF \
+		-DENABLE_AGGRESSIVE_CHECKS=ON \
+		-DCMAKE_INSTALL_PREFIX="$PREFIX" 
+		../../source
+	
+	make && make install
+}
+
 # compile ffmpeg
 compileFfmpeg() {
 	DIR=/tmp/ffmpeg
@@ -309,6 +327,7 @@ compileFfmpeg() {
 		--enable-libtheora \
 		--enable-libvpx \
 		--enable-libx264 \
+		--enable-libx265 \
 
 	make && make install
 }
@@ -332,6 +351,7 @@ compileFdkAac
 # compile video codecs
 compileVpx
 compileX264
+compileX265
 
 # almost there
 compileFfmpeg
