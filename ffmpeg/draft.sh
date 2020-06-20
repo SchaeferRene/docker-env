@@ -1,8 +1,8 @@
 #! /bin/sh
 
 PREFIX=/opt/ffmpeg
-PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig"
-LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib"
+PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig:/usr/lib/gcc/armv7-alpine-linux-musleabihf/6.4.0/pkgconfig"
+LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib:/usr/lib/gcc/armv7-alpine-linux-musleabihf/6.4.0"
 MAKEFLAGS=-j2
 CFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
 CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
@@ -78,10 +78,13 @@ dirtyHackForBrotli() {
 # compile freetype2
 compileFreetype2() {
 	DIR=/tmp/freetype2
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
+
 	git clone --depth 1 https://git.savannah.nongnu.org/git/freetype/freetype2.git
 	cd freetype2/
 	./autogen.sh
+
 	./configure \
 		--prefix="$PREFIX" \
 		--enable-shared=no \
@@ -92,21 +95,26 @@ compileFreetype2() {
 		--with-png=yes \
 		--with-brotli=yes \
 		#--with-harfbuzz=yes \
+
 	make && make install
 }
 
 # compile fontconfig
 compileFontConfig() {
 	DIR=/tmp/fontconfig
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
+
 	wget -O fontconfig.tar.bz2 https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.12.1.tar.bz2
 	tar xjf fontconfig.tar.bz2
 	cd fontconfig*
+
 	./configure \
 		--prefix="$PREFIX" \
 		--enable-static=yes \
 		--enable-shared=no \
 		--disable-docs
+
 	make && make install
 }
 
@@ -129,11 +137,13 @@ sanityCheck() {
 # compile MP3 Lame
 compileMp3Lame() {
 	DIR=/tmp/mp3lame
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
 
 	wget https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download -O lame.tar.gz
 	tar xzf lame.tar.gz
 	cd lame*
+
 	./configure \
 		--prefix="$PREFIX" \
 		--enable-shared=no \
@@ -145,11 +155,13 @@ compileMp3Lame() {
 # compile FDK-AAC
 compileFdkAac() {
 	DIR=/tmp/fdkaac
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
 
 	git clone --depth 1 https://github.com/mstorsjo/fdk-aac
 	cd fdk-aac
 	autoreconf -fiv
+
 	./configure \
 		--prefix="$PREFIX" \
 		--enable-shared=no \
@@ -160,7 +172,8 @@ compileFdkAac() {
 
 compileOgg() {
 	DIR=/tmp/ogg
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
 
 	git clone --depth 1 https://github.com/xiph/ogg.git
 	cd ogg
@@ -175,12 +188,13 @@ compileOgg() {
 
 compileVorbis() {
         DIR=/tmp/vorbis
-        mkdir -p "$DIR" && cd "$DIR"
+        mkdir -p "$DIR"
+	cd "$DIR"
 
         git clone --depth 1 https://github.com/xiph/vorbis.git
         cd vorbis
-
         ./autogen.sh
+
         ./configure \
                 --prefix="$PREFIX" \
                 --enable-shared=no \
@@ -191,12 +205,13 @@ compileVorbis() {
 
 compileOpus() {
         DIR=/tmp/opus
-        mkdir -p "$DIR" && cd "$DIR"
+        mkdir -p "$DIR"
+	cd "$DIR"
 
         git clone --depth 1 https://github.com/xiph/opus.git
         cd opus
-
         ./autogen.sh
+
         ./configure \
                 --prefix="$PREFIX" \
                 --enable-shared=no \
@@ -209,12 +224,13 @@ compileOpus() {
 
 compileTheora() {
         DIR=/tmp/theora
-        mkdir -p "$DIR" && cd "$DIR"
+        mkdir -p "$DIR"
+	cd "$DIR"
 
         git clone --depth 1 https://github.com/xiph/theora.git
         cd theora
-
         ./autogen.sh
+
         ./configure \
                 --prefix="$PREFIX" \
                 --enable-shared=no \
@@ -230,16 +246,17 @@ compileTheora() {
 
 
         make && make install
-
 }
 
 # compile VP8/VP9
 compileVpx() {
 	DIR=/tmp/vpx
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
 
 	git clone https://github.com/webmproject/libvpx.git
 	cd libvpx
+
 	./configure \
 		--prefix="$PREFIX" \
 		--enable-static \
@@ -263,10 +280,12 @@ compileVpx() {
 # compile x264
 compileX264() {
 	DIR=/tmp/x264
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
 	
 	git clone --depth 1 https://code.videolan.org/videolan/x264.git
 	cd x264/
+
 	./configure \
 		--prefix="$PREFIX" \
 		--enable-static \
@@ -277,27 +296,36 @@ compileX264() {
 
 # compile x265
 compileX265() {
-        DIR=/tmp/x264
-        mkdir -p "$DIR" && cd "$DIR"
+        DIR=/tmp/x265
+        mkdir -p "$DIR"
+	cd "$DIR"
 
 	hg clone https://bitbucket.org/multicoreware/x265
 	cd x265/build/linux/
+
 	cmake -G "Unix Makefiles" \
-		-DENABLE_SHARED=OFF \
+		-DCMAKE_INSTALL_PREFIX=/opt/ffmpeg\
+		-DENABLE_SHARED:bool=OFF \
 		-DENABLE_AGGRESSIVE_CHECKS=ON \
-		-DCMAKE_INSTALL_PREFIX="$PREFIX" 
+		-DENABLE_PIC=ON \
+		-DENABLE_CLI=ON \
+		-DENABLE_HDR10_PLUS=ON \
+		-DENABLE_LIBNUMA=OFF \
 		../../source
-	
+
 	make && make install
 }
 
 # compile ffmpeg
 compileFfmpeg() {
 	DIR=/tmp/ffmpeg
-	mkdir -p "$DIR" && cd "$DIR"
+	mkdir -p "$DIR"
+	cd "$DIR"
+
 	wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 	tar xjf ffmpeg-snapshot.tar.bz2
 	cd ffmpeg/
+
 	./configure \
 		--pkg-config=pkg-config \
 		--pkg-config-flags=--static \
@@ -321,37 +349,46 @@ compileFfmpeg() {
 		--enable-libfribidi \
 		--enable-libsoxr \
 		--enable-libmp3lame \
-		--enable-libfdk-aac \
 		--enable-libvorbis \
 		--enable-libopus \
 		--enable-libtheora \
+		--enable-libfdk-aac \
 		--enable-libvpx \
 		--enable-libx264 \
-		--enable-libx265 \
+		#--enable-libx265 \
 
 	make && make install
 }
 
-# prepare
-installDependencies
-dirtyHackForBrotli
+prepare() {
+	installDependencies
+	dirtyHackForBrotli
+}
 
-# compile supporting libs
-compileFreetype2
-compileFontConfig
+compileSupportingLibs() {
+	compileFreetype2
+	compileFontConfig
+}
 
-# compile audio codecs
-compileOgg
-compileVorbis
-compileOpus
-compileTheora
-compileMp3Lame
-compileFdkAac
+compileAudioCodecs() {
+	compileMp3Lame
+	compileOgg
+	compileVorbis
+	compileOpus
+	compileTheora
+	compileFdkAac
+}
 
-# compile video codecs
-compileVpx
-compileX264
-compileX265
+compileVideoCodecs() {
+	compileVpx
+	compileX264
+	#compileX265
+}
+
+prepare
+compileSupportingLibs
+compileAudioCodecs
+compileVideoCodecs
 
 # almost there
 compileFfmpeg
