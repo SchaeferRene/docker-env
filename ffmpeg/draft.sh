@@ -1,8 +1,8 @@
 #! /bin/sh
 
 PREFIX=/opt/ffmpeg
-PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig:/usr/lib/gcc/armv7-alpine-linux-musleabihf/6.4.0/pkgconfig"
-LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib:/usr/lib/gcc/armv7-alpine-linux-musleabihf/6.4.0"
+PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig"
+LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib"
 MAKEFLAGS=-j2
 CFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
 CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
@@ -41,6 +41,8 @@ installDependencies() {
 		bzip2-static \
 		libpng-dev \
 		libpng-static \
+		libjpeg-turbo-dev \
+		libjpeg-turbo-static \
 		brotli-dev \
 		brotli-static \
 		expat-dev \
@@ -48,13 +50,17 @@ installDependencies() {
 		libxml2-dev \
 		sdl2-dev \
 		sdl2-static \
+		sdl2_ttf-dev \
 		graphite2-dev \
 		graphite2-static \
 		fribidi-dev \
 		fribidi-static \
+		libbluray-dev \
 		soxr-dev \
 		soxr-static \
 		libvpx-dev \
+		meson \
+		ninja \
 		#fontconfig-dev \
 		#freetype-static \
 		#fontconfig-static \
@@ -65,8 +71,6 @@ installDependencies() {
 		#diffutils \
 		#xz \
 		#nasm \
-		#meson \
-		#ninja \
 
 }
 
@@ -75,7 +79,6 @@ dirtyHackForBrotli() {
 	ln -s /usr/lib/libbrotlidec-static.a /usr/lib/libbrotlidec.a
 }
 
-# compile freetype2
 compileFreetype2() {
 	DIR=/tmp/freetype2
 	mkdir -p "$DIR"
@@ -99,7 +102,6 @@ compileFreetype2() {
 	make && make install
 }
 
-# compile fontconfig
 compileFontConfig() {
 	DIR=/tmp/fontconfig
 	mkdir -p "$DIR"
@@ -118,7 +120,90 @@ compileFontConfig() {
 	make && make install
 }
 
-# sanity check
+compileAss() {
+	DIR=/tmp/ass
+	mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://github.com/libass/libass.git
+	cd libass
+	./autogen.sh
+
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-static=yes \
+		--enable-shared=no
+
+	make && make install
+}
+
+compileZimg() {
+        DIR=/tmp/zimg
+        mkdir -p "$DIR"
+        cd "$DIR"
+
+        git clone --depth 1 https://github.com/sekrit-twc/zimg.git
+        cd zimg
+        ./autogen.sh
+
+        ./configure \
+                --prefix="$PREFIX" \
+                --enable-shared=no \
+                --enable-static=yes
+
+        make && make install
+}
+
+compileVidStab() {
+	DIR=/tmp/vidstab
+	mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://github.com/georgmartius/vid.stab.git
+	cd vid.stab
+	mkdir build
+	cd build
+
+	cmake \
+		-DCMAKE_INSTALL_PREFIX="$PREFIX" \
+		-DBUILD_SHARED_LIBS=OFF \
+		..
+
+	make && make install
+}
+
+compileWebp() {
+	DIR=/tmp/webp
+        mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://github.com/webmproject/libwebp.git
+	cd libwebp
+	./autogen.sh
+
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-shared=no \
+		--enable-static=yes
+
+	 make && make install
+}
+
+compileOpenJpeg() {
+	DIR=/tmp/openjpeg
+	mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://github.com/uclouvain/openjpeg.git
+	cd openjpeg
+
+	cmake -G "Unix Makefiles" \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DCMAKE_INSTALL_PREFIX="$PREFIX"
+
+	make install
+}
+
 sanityCheck() {
 	if [[ $? -eq 0 ]]; then
 		echo "${PREFIX}/bin/ffmpeg -version" && ${PREFIX}/bin/ffmpeg -version
@@ -134,7 +219,6 @@ sanityCheck() {
 	fi
 }
 
-# compile MP3 Lame
 compileMp3Lame() {
 	DIR=/tmp/mp3lame
 	mkdir -p "$DIR"
@@ -152,7 +236,6 @@ compileMp3Lame() {
 	make && make install
 }
 
-# compile FDK-AAC
 compileFdkAac() {
 	DIR=/tmp/fdkaac
 	mkdir -p "$DIR"
@@ -248,13 +331,62 @@ compileTheora() {
         make && make install
 }
 
+compileWavPack() {
+	DIR=/tmp/wavpack
+	mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://github.com/dbry/WavPack.git
+	cd WavPack
+	./autogen.sh
+
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-shared=no \
+		--enable-static=yes
+
+	make && make install
+}
+
+compileSpeex() {
+	DIR=/tmp/speex
+	mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://github.com/xiph/speex.git
+	cd speex
+	./autogen.sh
+
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-shared=no \
+                --enable-static=yes
+
+	make && make install
+}
+
+compileXvid() {
+	DIR=/tmp/xvid
+	mkdir -p "$DIR"
+        cd "$DIR"
+
+	wget https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz -O xvid.tar.gz
+	tar xf xvid.tar.gz
+	cd xvidcore/build/generic/
+
+	CFLAGS="$CLFAGS -fstrength-reduce -ffast-math" ./configure \
+		--prefix="$PREFIX"
+
+	make && make install
+}
+
 # compile VP8/VP9
 compileVpx() {
 	DIR=/tmp/vpx
 	mkdir -p "$DIR"
 	cd "$DIR"
 
-	git clone https://github.com/webmproject/libvpx.git
+	git clone --depth 1 https://github.com/webmproject/libvpx.git
 	cd libvpx
 
 	./configure \
@@ -277,7 +409,6 @@ compileVpx() {
 	make && make install
 }
 
-# compile x264
 compileX264() {
 	DIR=/tmp/x264
 	mkdir -p "$DIR"
@@ -294,7 +425,6 @@ compileX264() {
 	make && make install
 }
 
-# compile x265
 compileX265() {
         DIR=/tmp/x265
         mkdir -p "$DIR"
@@ -316,7 +446,63 @@ compileX265() {
 	make && make install
 }
 
-# compile ffmpeg
+compileKvazaar() {
+	DIR=/tmp/kvazaar
+        mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://github.com/ultravideo/kvazaar.git
+	cd kvazaar
+	./autogen.sh
+
+	./configure \
+		--prefix="$PREFIX" \
+		--enable-shared=no \
+		--enable-static=yes
+
+	make && make install
+}
+
+compileAom() {
+	DIR=/tmp/aom
+        mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://aomedia.googlesource.com/aom
+	cd aom
+	mkdir compile
+	cd compile
+
+	cmake \
+		-DCMAKE_INSTALL_PREFIX="$PREFIX" \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DENABLE_TESTS=0FF \
+		-DENABLE_EXAMPLES=OFF \
+		-DENABLE_DOCS=OFF \
+		-DENABLE_TOOLS=OFF \
+		-DAOM_TARGET_CPU=generic \
+		..
+
+	make && make install
+}
+
+compileDav1d() {
+	DIR=/tmp/dav1d
+	mkdir -p "$DIR"
+        cd "$DIR"
+
+	git clone --depth 1 https://code.videolan.org/videolan/dav1d.git
+	cd dav1d
+
+	meson build \
+		--prefix "$PREFIX" \
+		--buildtype release \
+		--optimization 3 \
+		-Ddefault_library=static
+
+	ninja -C build install
+}
+
 compileFfmpeg() {
 	DIR=/tmp/ffmpeg
 	mkdir -p "$DIR"
@@ -347,14 +533,26 @@ compileFfmpeg() {
 		--enable-libfreetype \
 		--enable-fontconfig \
 		--enable-libfribidi \
+		--enable-libbluray \
+		--enable-libzimg \
 		--enable-libsoxr \
+		--enable-libass \
+		--enable-libvidstab \
+		--enable-libwebp \
+		--enable-libopenjpeg \
+		--enable-libspeex \
+		--enable-libwavpack \
 		--enable-libmp3lame \
 		--enable-libvorbis \
 		--enable-libopus \
 		--enable-libtheora \
 		--enable-libfdk-aac \
+		--enable-libxvid \
 		--enable-libvpx \
 		--enable-libx264 \
+		--enable-libkvazaar \
+		--enable-libaom \
+		--enable-libdav1d \
 		#--enable-libx265 \
 
 	make && make install
@@ -368,6 +566,14 @@ prepare() {
 compileSupportingLibs() {
 	compileFreetype2
 	compileFontConfig
+	compileAss
+	compileZimg
+	compileVidStab
+}
+
+compileImageLibs() {
+	compileWebp
+	compileOpenJpeg
 }
 
 compileAudioCodecs() {
@@ -377,16 +583,23 @@ compileAudioCodecs() {
 	compileOpus
 	compileTheora
 	compileFdkAac
+	compileWavPack
+	compileSpeex
 }
 
 compileVideoCodecs() {
+	compileXvid
 	compileVpx
 	compileX264
-	#compileX265
+	compileX265
+	compileAom
+	compileKvazaar
+	compileDav1d
 }
 
 prepare
 compileSupportingLibs
+compileImageLibs
 compileAudioCodecs
 compileVideoCodecs
 
