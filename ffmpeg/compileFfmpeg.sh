@@ -1,18 +1,24 @@
 #! /bin/sh
 
-PREFIX=/opt/ffmpeg
-OWN_PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig"
-PKG_CONFIG_PATH="$OWN_PKG_CONFIG_PATH:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig"
-LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib"
-MAKEFLAGS=-j2
-CFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
-CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
-PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-LDFLAGS="-Wl,-z,relro,-z,now"
+export PREFIX=/opt/ffmpeg
+export OWN_PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig"
+export PKG_CONFIG_PATH="$OWN_PKG_CONFIG_PATH:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig"
+export LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib"
+export MAKEFLAGS=-j2
+export CFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
+export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
+export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
 
-FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
+#FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
+FFMPEG_FEATURES=""
 
 mkdir -p "$PREFIX"
+
+addFeature() {
+	[ $(echo "$FFMPEG_FEATURES" | grep -q "$1"; echo $?) -eq 0 ] \
+		|| FFMPEG_FEATURES="$FFMPEG_FEATURES $1"
+}
 
 installFfmpegToolingDependencies() {
 	echo "--- Installing Tooling Dependencies"
@@ -31,9 +37,11 @@ installFfmpegToolingDependencies() {
 		texinfo \
 		yasm
 
+	echo
+
 	# TODO: clarify: below dependencies might be for ffplay only
 	echo "--- Installing ffmpeg build Dependencies"
-	apk add --no-cache --update \
+	apk add --no-cache \
 		libva-dev \
 		sdl2-dev sdl2-static sdl2_ttf-dev \
 		libxcb-dev libxcb-static
@@ -42,20 +50,6 @@ installFfmpegToolingDependencies() {
 }
 
 installDependencies() {
-	apk add --no-cache --update \
-		diffutils \
-		mercurial \
-		nasm \
-		glib-dev \
-		glib-static \
-		v4l-utils-dev \
-		libjpeg-turbo-dev \
-		libjpeg-turbo-static \
-		graphite2-dev \
-		graphite2-static \
-		meson \
-		ninja
-
 	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libv4l2 --enable-indev=v4l2"
 }
 
@@ -72,35 +66,43 @@ dirtyHackForBrotli() {
 
 sanityCheck() {
 	echo
-	echo "--- Compilation status:" $?
+	echo "--- Compilation status: " $?
 
 	if [[ $? -eq 0 ]]; then
-		for PRG in ffmpeg ffprobe
+		for PRG in ffmpeg ffprobe ffplay
 		do
-			echo
 			PRG="$PREFIX/bin/$PRG"
 			if [[ -f "$PRG" ]]; then
+				echo
 				echo "${PRG} -version" && ${PRG} -version
 				echo -n "${PRG} dependencies:" && echo $(ldd "$PRG" | wc -l)
+				echo
 			fi
-			echo
 		done
 	fi
 }
 
 hasBeenBuilt() {
-	PKG_CONFIG_PATH="$OWN_PKG_CONFIG_PATH" pkg-config --exists --no-cache --env-only --static $0
+	echo "--- Checking $1 in $OWN_PKG_CONFIG_PATH"
+	
+	if [ -z "$1" ]; then
+		PCP=$PKG_CONFIG_PATH
+	else
+		PCP=$OWN_PKG_CONFIG_PATH
+	fi
+	RESULT=$(PKG_CONFIG_PATH="$PCP" pkg-config --exists --no-cache --env-only --static --print-errors $1; echo $?)
+	echo
 }
 
 compileOpenSsl() {
 	echo "--- Installing OpenSSL"
 
-	apk add --no-cache --update \
+	apk add --no-cache \
 		openssl \
                 openssl-dev \
                 openssl-libs-static
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-openssl"
+	addFeature --enable-openssl
 
 	echo
 }
@@ -108,12 +110,12 @@ compileOpenSsl() {
 compileXml2() {
         echo "--- Installing libXml2"
 
-        apk add --no-cache --update \
+        apk add --no-cache \
 		zlib-dev \
 		zlib-static \
 		libxml2-dev
 
-        FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libxml2"
+        addFeature --enable-libxml2
 
         echo
 }
@@ -121,22 +123,32 @@ compileXml2() {
 compileFribidi() {
         echo "--- Installing Fribidi"
 
-        apk add --no-cache --update \
+        apk add --no-cache \
                 fribidi-dev \
                 fribidi-static
 
-        FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libfribidi"
+        addFeature --enable-libfribidi
 
         echo
 }
 
 compileFreetype() {
-	[ `hasBeenBuilt freetype2; echo $?` -eq 0 ] \
+	hasBeenBuilt harfbuzz
+	HAS_HARFBUZZ=$RESULT
+
+	if [ $HAS_HARFBUZZ -eq 0 ];then
+		FREETYPE_FLAGS="$FREETYPE_FLAGS --with-harfbuzz=yes"
+	fi
+
+	hasBeenBuilt freetype2
+	[ $RESULT -eq 0 ] \
 	&& echo "--- Skipping already built freetype2" \
 	|| {
+		compileXml2
+
 		echo "--- Installing FreeType"
 
-		apk add --no-cache --update \
+		apk add --no-cache \
 			zlib-dev \
 			zlib-static \
 			libbz2 \
@@ -152,8 +164,10 @@ compileFreetype() {
 		DIR=/tmp/freetype2
 		mkdir -p "$DIR"
 		cd "$DIR"
+
 		git clone --depth 1 https://git.savannah.nongnu.org/git/freetype/freetype2.git
 		cd freetype2/
+
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
@@ -164,24 +178,34 @@ compileFreetype() {
 			--with-bzip2=yes \
 			--with-png=yes \
 			--with-brotli=yes \
-			#--with-harfbuzz=yes \
+			$FREETYPE_FLAGS
+
 		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libfreetype"
+	addFeature --enable-libfreetype
 
 	echo
+
+	# Freetype + Harfbuzz seems to break Ffmpeg build (at least on ARM)
+	#if [ -z "$BUILDING_HARFBUZZ" ]; then
+	#	compileHarfbuzz
+	#fi
 }
 
 compileFontConfig() {
-	[ `hasBeenBuilt fontconfig; echo $?` -eq 0 ] \
+	hasBeenBuilt fontconfig
+
+	[ $RESULT -eq 0 ] \
         && echo "--- Skipping already built fontconfig" \
         || {
 		compileFreetype
 
 		echo "--- Installing fontConfig"
 
-                apk add --no-cache --update \
+                apk add --no-cache \
+        	        libpng-dev \
+                	libpng-static \
 			expat-dev \
 			expat-static
 
@@ -201,23 +225,155 @@ compileFontConfig() {
 			--disable-docs
 
 		make && make install
+
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-fontconfig"
+	addFeature --enable-fontconfig
 
 	echo
 }
 
+compilePixman() {
+	echo "--- Installing Pixman"
+
+	apk add --no-cache \
+		pixman-dev \
+		pixman-static
+
+	echo
+}
+
+compileCairo() {
+	hasBeenBuilt cairo
+
+	[ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built Cairo" \
+        || {
+		compilePixman
+		compileFontConfig	# compiles freetype installs xml2 installs zlib
+
+		echo "--- Installing Cairo"
+
+		apk add --no-cache \
+			glib-dev \
+			glib-static \
+        	        libpng-dev \
+                	libpng-static \
+			libx11-dev \
+			libx11-static \
+			libxcb-dev \
+			libxcb-static
+
+		# TODO: add QT5 support?
+		# TODO: add OpenGL support?
+		# TODO: add directFB support?
+
+                DIR=/tmp/cairo
+                mkdir -p "$DIR"
+                cd "$DIR"
+
+                git clone --depth 1 https://github.com/freedesktop/cairo.git
+                cd cairo
+
+                ./autogen.sh
+                ./configure \
+                        --prefix="$PREFIX" \
+                        --enable-shared=no \
+                        --enable-static=yes
+
+                make && make install
+        }
+
+        echo
+}
+
+compileGraphite2() {
+	hasBeenBuilt graphite2
+
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built Graphite2" \
+        || {
+                echo "--- Installing Graphite2"
+
+                DIR=/tmp/graphite2
+                mkdir -p "$DIR"
+                cd "$DIR"
+
+                git clone --depth 1 https://github.com/silnrsi/graphite.git
+                cd graphite
+
+                mkdir build
+                cd build
+
+                cmake \
+                        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+                        -DBUILD_SHARED_LIBS=OFF \
+                        ..
+
+                make && make install
+        }
+	
+	echo
+}
+
+
+compileHarfbuzz () {
+	BUILDING_HARFBUZZ=1
+	hasBeenBuilt harfbuzz
+
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built Harfbuzz" \
+        || {
+		compileCairo	# compiles fontconfig compiles freetype
+				# installs glib
+
+		# Harfbuzz doesn't seem to like statically compiled Graphite2
+		#compileGraphite2
+
+                echo "--- Installing Harfbuzz"
+
+                apk add --no-cache \
+			icu-dev \
+			icu-static
+
+                DIR=/tmp/harfbuzz
+                mkdir -p "$DIR"
+                cd "$DIR"
+
+                git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
+                cd harfbuzz
+
+                ./autogen.sh
+                ./configure \
+                        --prefix="$PREFIX" \
+                        --enable-shared=no \
+                        --enable-static=yes \
+			#--with-graphite2
+
+                make && make install
+
+        	echo
+
+		# force recompilation of freetype
+		rm "$PREFIX/lib/pkgconfig/freetype.pc"
+		rm -rf "/tmp/freetype"
+		compileFreetype
+        }
+}
+
+
 compileAss() {
-	[ `hasBeenBuilt libass; echo $?` -eq 0 ] \
-        && echo "--- Skipping already built libass" \
+	hasBeenBuilt libass
+
+	[ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built libAss" \
         || {
 		compileFontConfig # font config also builds freetype
 		compileFribidi
 
 		echo "--- Installing libAss"
 
-		apk add --no-cache --update nasm
+		apk add --no-cache nasm
 
 		DIR=/tmp/ass
 		mkdir -p "$DIR"
@@ -233,13 +389,15 @@ compileAss() {
 		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libass"
+	addFeature --enable-libass
 
 	echo
 }
 
 compileZimg() {
-	[ `hasBeenBuilt zimg; echo $?` -eq 0 ] \
+	hasBeenBuilt zimg
+
+	[ $RESULT -eq 0 ] \
         && echo "--- Skipping already built zimg" \
         || {
 		echo "--- Installing zimg"
@@ -259,13 +417,15 @@ compileZimg() {
 		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libzimg"
+	addFeature --enable-libzimg
 
 	echo
 }
 
 compileVidStab() {
-	[ `hasBeenBuilt vidstab; echo $?` -eq 0 ] \
+	hasBeenBuilt vidstab
+
+	[ $RESULT -eq 0 ] \
         && echo "--- Skipping already built vidstab" \
         || {
 		echo "--- Installing vid.stab"
@@ -275,6 +435,7 @@ compileVidStab() {
 
 		git clone --depth 1 https://github.com/georgmartius/vid.stab.git
 		cd vid.stab
+
 		mkdir build
 		cd build
 
@@ -286,15 +447,19 @@ compileVidStab() {
 		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libvidstab"
+	addFeature --enable-libvidstab
 
 	echo
 }
 
 compileWebp() {
-	[ `pkg-config --exists --static libwebp; echo $?` -eq 0 ] \
-        && echo "skipping already built libwebp" \
+	hasBeenBuilt libwebp
+
+	[ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built libWebp" \
         || {
+		echo "--- Installing webp"
+
 		DIR=/tmp/webp
         	mkdir -p "$DIR"
 	        cd "$DIR"
@@ -311,13 +476,19 @@ compileWebp() {
 		make && make install
 	}
 	
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libwebp"
+	addFeature --enable-libwebp
+
+	echo
 }
 
 compileOpenJpeg() {
-	[ `pkg-config --exists --static libopenjp2; echo $?` -eq 0 ] \
-        && echo "skipping already built libopenjp2" \
+	hasBeenBuilt libopenjp2
+
+	[ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built OpenJpeg" \
         || {
+		echo "--- Installing OpenJpeg"
+
 		DIR=/tmp/openjpeg
 		mkdir -p "$DIR"
         	cd "$DIR"
@@ -332,25 +503,29 @@ compileOpenJpeg() {
 		make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libopenjpeg"
+	addFeature --enable-libopenjpeg
+
+	echo
 }
 
 compileSoxr() {
         echo "--- Installing Soxr"
 
-        apk add --no-cache --update \
+        apk add --no-cache \
 		soxr-dev \
 		soxr-static
 
-        FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libsoxr"
+        addFeature --enable-libsoxr
 
         echo
 }
 
 compileMp3Lame() {
 	[ -e "$PREFIX/lib/libmp3lame.a" ] \
-        && echo "skipping already built libmp3lame" \
+        && echo "--- Skipping already built mp3lame" \
         || {
+		echo "--- Installing mp3lame"
+
 		DIR=/tmp/mp3lame
 		mkdir -p "$DIR"
 		cd "$DIR"
@@ -367,13 +542,19 @@ compileMp3Lame() {
 		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libmp3lame"
+	addFeature --enable-libmp3lame
+
+	echo
 }
 
 compileFdkAac() {
-	[ `pkg-config --exists --static fdk-aac; echo $?` -eq 0 ] \
-        && echo "skipping already built fdk-aac" \
+	hasBeenBuilt fdk-aac
+
+	[ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built fdk-aac" \
         || { 
+		echo "--- Installing fdk-aac"
+
 		DIR=/tmp/fdkaac
 		mkdir -p "$DIR"
 		cd "$DIR"
@@ -390,15 +571,19 @@ compileFdkAac() {
 		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libfdk-aac"
+	addFeature --enable-libfdk-aac
+
+	echo
 }
 
 compileOgg() {
-	apk add --no-cache --update libogg-dev
-
-	#[ `pkg-config --exists --static ogg; echo $?` -eq 0 ] \
-        #&& echo "skipping already built ogg" \
+	#hasBeenBuilt ogg
+	#[ $RESULT -eq 0 ] \
+        #&& echo "--- Skipping already built ogg" \
         #|| {
+		echo "--- Installing ogg"
+		# standard version is enough
+		apk add --no-cache libogg-dev
 	#	DIR=/tmp/ogg
 	#	mkdir -p "$DIR"
 	#	cd "$DIR"
@@ -411,15 +596,19 @@ compileOgg() {
         #	        --enable-static=yes
 	#	make && make install
 	#}
+
+	echo
 }
 
 compileVorbis() {
-	apk add --no-cache --update libvorbis-dev
-
-	#compileOgg
-	#[ `pkg-config --exists --static vorbis; echo $?` -eq 0 ] \
-        #&& echo "skipping already built vorbis" \
+	#hasBeenBuilt vorbis
+	#[ $RESULT -eq 0 ] \
+        #&& echo "--- Skipping already built vorbis" \
         #|| {
+		echo "--- Installing vorbis"
+		# standard versionis enough
+		apk add --no-cache libvorbis-dev
+	#	compileOgg
         #	DIR=/tmp/vorbis
         #	mkdir -p "$DIR"
 	#	cd "$DIR"
@@ -433,15 +622,19 @@ compileVorbis() {
 	#        make && make install
 	#}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libvorbis"
+	addFeature --enable-libvorbis
+
+	echo
 }
 
 compileOpus() {
-	apk add --no-cache --update libopusenc-dev
-
-	#[ `pkg-config --exists --static opus; echo $?` -eq 0 ] \
-        #&& echo "skipping already built opus" \
+	#hasBeenBuilt opus
+	#[ $RESULT -eq 0 ] \
+        #&& echo "-- Skipping already built opus" \
         #|| {
+		echo "--- Installing opus"
+		# default opus is enough
+		apk add --no-cache libopusenc-dev
         #	DIR=/tmp/opus
         #	mkdir -p "$DIR"
 	#	cd "$DIR"
@@ -450,52 +643,63 @@ compileOpus() {
         #	./autogen.sh
         #	./configure \
         #	        --prefix="$PREFIX" \
-	#                --enable-shared=no \
+	#               --enable-shared=no \
         #        	--enable-static=yes \
 	#		--disable-doc \
 	#		--disable-extra-programs
 	#       make && make install
 	#}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libopus"
+	addFeature --enable-libopus
+
+	echo
 }
 
 compileTheora() {
-	[ `pkg-config --exists --static theora; echo $?` -eq 0 ] \
-        && echo "skipping already built theora" \
-        || {
-        	DIR=/tmp/theora
-        	mkdir -p "$DIR"
-		cd "$DIR"
+	#hasBeenBuilt theora
+	#[ $RESULT -eq 0 ] \
+        #&& echo "--- Skipping already built theora" \
+        #|| {
+	#	compileOgg
+		echo "--- Installing Theora"
 
-        	git clone --depth 1 https://github.com/xiph/theora.git
-        	cd theora
-        	./autogen.sh
+		# standard theora is enough
+		apk add --no-cache libtheora-dev libtheora-static
 
-        	./configure \
-                	--prefix="$PREFIX" \
-        	        --enable-shared=no \
-        	        --enable-static=yes \
-			--disable-doc \
-			--disable-examples \
-  			--with-ogg="$PREFIX/lib" \
-  			--with-ogg-libraries="$PREFIX/lib" \
-  			--with-ogg-includes="$PREFIX/include/" \
-  			--with-vorbis="$PREFIX/lib" \
-  			--with-vorbis-libraries="$PREFIX/lib" \
-  			--with-vorbis-includes="$PREFIX/include/"
+        #	DIR=/tmp/theora
+        #	mkdir -p "$DIR"
+	#	cd "$DIR"
+        #	git clone --depth 1 https://github.com/xiph/theora.git
+        #	cd theora
+        #	./autogen.sh
+        #	./configure \
+        #        	--prefix="$PREFIX" \
+        #	        --enable-shared=no \
+        #	        --enable-static=yes \
+	#		--disable-doc \
+	#		--disable-examples \
+  	#		--with-ogg="$PREFIX/lib" \
+  	#		--with-ogg-libraries="$PREFIX/lib" \
+  	#		--with-ogg-includes="$PREFIX/include/" \
+  	#		--with-vorbis="$PREFIX/lib" \
+  	#		--with-vorbis-libraries="$PREFIX/lib" \
+  	#		--with-vorbis-includes="$PREFIX/include/"
+        #	make && make install
+	#}
 
+	addFeature --enable-libtheora
 
-        	make && make install
-	}
-
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libtheora"
+	echo
 }
 
 compileWavPack() {
-	[ `pkg-config --exists --static wavpack; echo $?` -eq 0 ] \
-        && echo "skipping already built wavpack" \
+	hasBeenBuilt wavpack
+
+	[ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built wavpack" \
         || {
+		echo "--- Installing wavpack"
+
 		DIR=/tmp/wavpack
 		mkdir -p "$DIR"
         	cd "$DIR"
@@ -512,182 +716,266 @@ compileWavPack() {
 		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libwavpack"
+	addFeature --enable-libwavpack
+
+	echo
 }
 
 compileSpeex() {
-	[ `pkg-config --exists --static speex; echo $?` -eq 0 ] \
-        && echo "skipping already built speex" \
+	hasBeenBuilt speex
+
+	[ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built speex" \
         || {
-	DIR=/tmp/speex
-	mkdir -p "$DIR"
-        cd "$DIR"
+		echo "--- Installing speex"
 
-	git clone --depth 1 https://github.com/xiph/speex.git
-	cd speex
-	./autogen.sh
+		DIR=/tmp/speex
+		mkdir -p "$DIR"
+        	cd "$DIR"
 
-	./configure \
-		--prefix="$PREFIX" \
-		--enable-shared=no \
-                --enable-static=yes
+		git clone --depth 1 https://github.com/xiph/speex.git
+		cd speex
+		./autogen.sh
 
-	make && make install
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+        	        --enable-static=yes
+
+		make && make install
 	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libspeex"
+	addFeature --enable-libspeex
+
+	echo
 }
 
 compileXvid() {
-	DIR=/tmp/xvid
-	mkdir -p "$DIR"
-        cd "$DIR"
+	hasBeenBuilt xvid
 
-	wget https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz -O xvid.tar.gz
-	tar xf xvid.tar.gz
-	cd xvidcore/build/generic/
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built xvid" \
+        || {
+                echo "--- Installing xvid"
 
-	CFLAGS="$CLFAGS -fstrength-reduce -ffast-math" ./configure \
-		--prefix="$PREFIX"
+		DIR=/tmp/xvid
+		mkdir -p "$DIR"
+        	cd "$DIR"
 
-	make && make install
+		wget https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz -O xvid.tar.gz
+		tar xf xvid.tar.gz
+		cd xvidcore/build/generic/
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libxvid"
+		CFLAGS="$CLFAGS -fstrength-reduce -ffast-math" ./configure \
+			--prefix="$PREFIX"
+
+		make && make install
+	}
+
+	addFeature --enable-libxvid
+
+	echo
 }
 
 # compile VP8/VP9
 compileVpx() {
-	DIR=/tmp/vpx
-	mkdir -p "$DIR"
-	cd "$DIR"
+	hasBeenBuilt vpx
 
-	git clone --depth 1 https://github.com/webmproject/libvpx.git
-	cd libvpx
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built libVpx" \
+	|| {
+		echo "--- Installing libVpx"
 
-	./configure \
-		--prefix="$PREFIX" \
-		--enable-static \
-		--disable-shared \
-		--disable-examples \
-		--disable-tools \
-		--disable-install-bins \
-		--disable-docs \
-		--target=generic-gnu \
-		--enable-vp8 \
-		--enable-vp9 \
-		--enable-vp9-highbitdepth \
-		--enable-pic \
-		--disable-examples \
-		--disable-docs \
-		--disable-debug
+		DIR=/tmp/vpx
+		mkdir -p "$DIR"
+		cd "$DIR"
 
-	make && make install
+		apk add --no-cache diffutils
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libvpx"
+		git clone --depth 1 https://github.com/webmproject/libvpx.git
+		cd libvpx
+
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-static \
+			--disable-shared \
+			--disable-examples \
+			--disable-tools \
+			--disable-install-bins \
+			--disable-docs \
+			--target=generic-gnu \
+			--enable-vp8 \
+			--enable-vp9 \
+			--enable-vp9-highbitdepth \
+			--enable-pic \
+			--disable-examples \
+			--disable-docs \
+			--disable-debug
+
+		make && make install
+	}
+
+	addFeature --enable-libvpx
+
+	echo
 }
 
 compileX264() {
-	DIR=/tmp/x264
-	mkdir -p "$DIR"
-	cd "$DIR"
+	hasBeenBuilt x264
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built x264" \
+	|| {
+		echo "--- Installing x264"
+
+		DIR=/tmp/x264
+		mkdir -p "$DIR"
+		cd "$DIR"
 	
-	git clone --depth 1 https://code.videolan.org/videolan/x264.git
-	cd x264/
+		git clone --depth 1 https://code.videolan.org/videolan/x264.git
+		cd x264/
 
-	./configure \
-		--prefix="$PREFIX" \
-		--enable-static \
-		--enable-pic
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-static \
+			--enable-pic
 
-	make && make install
+		make && make install
+	}
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libx264"
+	addFeature --enable-libx264
+
+	echo
 }
 
 compileX265() {
-        DIR=/tmp/x265
-        mkdir -p "$DIR"
-	cd "$DIR"
+	hasBeenBuilt x265
 
-	hg clone https://bitbucket.org/multicoreware/x265
-	cd x265/build/linux/
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built x265" \
+        || {
+                echo "--- Installing x265"
 
-	cmake -G "Unix Makefiles" \
-		-DCMAKE_INSTALL_PREFIX="$PREFIX" \
-		-DENABLE_SHARED:bool=OFF \
-		-DENABLE_AGGRESSIVE_CHECKS=ON \
-		-DENABLE_PIC=ON \
-		-DENABLE_CLI=ON \
-		-DENABLE_HDR10_PLUS=ON \
-		-DENABLE_LIBNUMA=OFF \
-		../../source
+		apk add --no-cache mercurial
 
-	make && make install
+        	DIR=/tmp/x265
+        	mkdir -p "$DIR"
+		cd "$DIR"
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libx265"
+		hg clone https://bitbucket.org/multicoreware/x265
+		cd x265/build/linux/
+
+		cmake -G "Unix Makefiles" \
+			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
+			-DENABLE_SHARED:bool=OFF \
+			-DENABLE_AGGRESSIVE_CHECKS=ON \
+			-DENABLE_PIC=ON \
+			-DENABLE_CLI=ON \
+			-DENABLE_HDR10_PLUS=ON \
+			-DENABLE_LIBNUMA=OFF \
+			../../source
+
+		make && make install
+	}
+
+	addFeature --enable-libx265
+
+	echo
 }
 
 compileKvazaar() {
-	DIR=/tmp/kvazaar
-        mkdir -p "$DIR"
-        cd "$DIR"
+	hasBeenBuilt kvazaar
 
-	git clone --depth 1 https://github.com/ultravideo/kvazaar.git
-	cd kvazaar
-	./autogen.sh
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built Kvazaar" \
+        || {
+                echo "--- Installing Kvazaar"
 
-	./configure \
-		--prefix="$PREFIX" \
-		--enable-shared=no \
-		--enable-static=yes
+		DIR=/tmp/kvazaar
+        	mkdir -p "$DIR"
+        	cd "$DIR"
 
-	make && make install
+		git clone --depth 1 https://github.com/ultravideo/kvazaar.git
+		cd kvazaar
+		./autogen.sh
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libkvazaar"
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes
+
+		make && make install
+	}
+
+	addFeature --enable-libkvazaar
+
+	echo
 }
 
 compileAom() {
-	DIR=/tmp/aom
-        mkdir -p "$DIR"
-        cd "$DIR"
+	hasBeenBuilt aom
 
-	git clone --depth 1 https://aomedia.googlesource.com/aom
-	cd aom
-	mkdir compile
-	cd compile
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built aom" \
+        || {
+                echo "--- Installing aom"
 
-	cmake \
-		-DCMAKE_INSTALL_PREFIX="$PREFIX" \
-		-DBUILD_SHARED_LIBS=OFF \
-		-DENABLE_TESTS=0FF \
-		-DENABLE_EXAMPLES=OFF \
-		-DENABLE_DOCS=OFF \
-		-DENABLE_TOOLS=OFF \
-		-DAOM_TARGET_CPU=generic \
-		..
+		DIR=/tmp/aom
+        	mkdir -p "$DIR"
+        	cd "$DIR"
 
-	make && make install
+		git clone --depth 1 https://aomedia.googlesource.com/aom
+		cd aom
+		mkdir compile
+		cd compile
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libaom"
+		cmake \
+			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
+			-DBUILD_SHARED_LIBS=OFF \
+			-DENABLE_TESTS=0 \
+			-DENABLE_EXAMPLES=OFF \
+			-DENABLE_DOCS=OFF \
+			-DENABLE_TOOLS=OFF \
+			-DAOM_TARGET_CPU=generic \
+			..
+
+		make && make install
+	}
+
+	addFeature --enable-libaom
+
+	echo
 }
 
 compileDav1d() {
-	DIR=/tmp/dav1d
-	mkdir -p "$DIR"
-        cd "$DIR"
+	hasBeenBuilt dav1d
 
-	git clone --depth 1 https://code.videolan.org/videolan/dav1d.git
-	cd dav1d
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built dav1d" \
+        || {
+                echo "--- Installing dav1d"
 
-	meson build \
-		--prefix "$PREFIX" \
-		--buildtype release \
-		--optimization 3 \
-		-Ddefault_library=static
+		apk add --no-cache meson ninja
 
-	ninja -C build install
+		DIR=/tmp/dav1d
+		mkdir -p "$DIR"
+        	cd "$DIR"
 
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libdav1d"
+		git clone --depth 1 https://code.videolan.org/videolan/dav1d.git
+		cd dav1d
+
+		meson build \
+			--prefix "$PREFIX" \
+			--buildtype release \
+			--optimization 3 \
+			-Ddefault_library=static
+
+		ninja -C build install
+	}
+
+	addFeature --enable-libdav1d
+
+	echo
 }
 
 compileFfmpeg() {
@@ -695,7 +983,10 @@ compileFfmpeg() {
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc "
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3 "
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS $FFMPEG_FEATURES"
-	echo "compiling ffmpeg with features $FFMPEG_OPTIONS"
+
+	echo "--- Compiling ffmpeg with features $FFMPEG_OPTIONS"
+
+	apk add zlib-dev zlib-static
 
 	DIR=/tmp/ffmpeg
 	mkdir -p "$DIR"
@@ -710,10 +1001,12 @@ compileFfmpeg() {
 		--prefix="$PREFIX" \
 		--extra-cflags="-I${PREFIX}/include -fopenmp" \
 		--extra-ldflags="-L${PREFIX}/lib -static -fopenmp" \
+		--extra-ldexeflags="-static" \
 		--pkg-config=pkg-config \
 		--pkg-config-flags=--static \
 		--toolchain=hardened \
 		$FFMPEG_OPTIONS
+		#--extra-libs="-lpthread -lm -lz" \
 
 	make && make install
 }
@@ -723,47 +1016,48 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	#compileOpenSsl
-	#compileXml2
-	#compileFribidi
-	#compileFreetype
-	#compileFontConfig
-	#compileZimg
-	#compileVidStab
+	compileOpenSsl
+	compileXml2
+	compileFribidi
+	compileFreetype
+	compileFontConfig
+	compileZimg
+	compileVidStab
 	compileAss
 }
 
 compileImageLibs() {
 	compileOpenJpeg
-	#compileWebp
+	compileWebp
 }
 
 compileAudioCodecs() {
-	#compileSoxr
+	compileSoxr
 	compileOpus
-	#compileVorbis
-	#compileMp3Lame
-	#compileFdkAac
-	#compileTheora
-	#compileWavPack
-	#compileSpeex
+	compileVorbis
+	compileMp3Lame
+	compileFdkAac
+	compileTheora
+	compileWavPack
+	compileSpeex
 }
 
 compileVideoCodecs() {
 	compileXvid
-	#compileVpx
-	#compileX264
-	#compileAom
-	#compileKvazaar
-	#compileDav1d
+	compileVpx
+	compileX264
+	compileAom
+	compileKvazaar
+	compileDav1d
+	# didnt get x265 to work yet
 	#compileX265
 }
 
 installFfmpegToolingDependencies
 compileSupportingLibs
-#compileImageLibs
-#compileAudioCodecs
-#compileVideoCodecs
+compileImageLibs
+compileAudioCodecs
+compileVideoCodecs
 
 # almost there
 compileFfmpeg
