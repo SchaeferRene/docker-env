@@ -10,6 +10,7 @@ export ARCH=$(uname -m)
 if [ "$ARCH" = "armv7l" ]; then export ARCH="armv7"; fi
 
 export BASE_IMAGE="alpine-base-$ARCH"
+export FFMPEG_IMAGE="ffmpeg-alpine-$ARCH"
 export GITEA_IMAGE="gitea-alpine-$ARCH"
 export MPD_IMAGE="mpd-alpine-$ARCH"
 export NGINX_IMAGE="nginx-alpine-$ARCH"

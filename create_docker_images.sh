@@ -20,6 +20,7 @@ function usage {
 	echo "  -l, --logs      follow logs of built and deployed services"
 	echo "  -r, --run       Run created base image for further evaluation"
 	echo "Services:"
+	echo "      --ffmpeg    Build ffmpeg image"
 	#echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
@@ -128,6 +129,9 @@ while [[ $# -gt 0 ]]; do
         -r|--run)
         IS_RUN_BASE=0
         ;;
+	--ffmpeg)
+	BASE_IMAGES+=("ffmpeg")
+	;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")
 #        ;;
