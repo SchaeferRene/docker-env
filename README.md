@@ -4,16 +4,19 @@
 
 The scripts have been tested with:
 
-* armv7 (ArchLinux on Odroid-XU4, ArchLinux on Odroid-U3)
+* armv7 (ArchLinux on Odroid-XU4)
 * x86_64 (Manjaro on Schenker XMG)
 * aarch64 (ArchLinux on Odroid-C2, Manjaro on Raspberry Pi 4)
 
 ## What's in it?
 * Script to create [alpine](https://alpinelinux.org/) based docker base image from scratch
-* build Music Player Deamon [mpd] image, intended mainly as an internet radio player
+* build ffmpeg
 * build youtube-dl
+* build Music Player Deamon [mpd] image, intended mainly as an internet radio player
 
-wip:
+wip/todo:
+* tvheadend
+* jellyfin
 * *build Webserver and reverse proxy [nginx]*
 * *build git hoster [gitea] for your private repositories*
 
@@ -80,6 +83,9 @@ The mpd server can be controlled through one of the many [mpd clients] connectin
 ## WebServer & Reverse Proxy [nginx]
 *tbd*
 
+## [ffmpeg]
+see [Ffmpeg.md](_doc/Ffmpeg.md)
+
 ## Flash Video Downloader `youtube-dl`
 ### Description
 `youtube-dl` can be used to download flash videos from the internet (not only youtube).
@@ -122,6 +128,7 @@ Run the ain script `create_docker_images.sh` as a docker enabled user in order t
 * `-a` | `--all`  - build (and push) all features, though only deploying the ones specified
 * `-l` | `--logs` - once deployed, follow the logs of deployed services
 * `-r` | `--run`  - run created base image for further evaluation
+* `--ffmpeg` - build ffmpeg
 * `--mpd` - build mpd service
 * `--nginx` - build nginx service
 * `--ydl` , `--youtube-dl` - build youtube-dl
@@ -129,7 +136,7 @@ Run the ain script `create_docker_images.sh` as a docker enabled user in order t
 ### `set_env.sh`
 Source the script `set_env.sh` to have the environment variables set, so you can run docker-compose commands on your own.
 
-
+[ffmpeg]: https://ffmpeg.org
 [gitea]: https://gitea.io/en-us/
 [mpd]: https://www.musicpd.org
 [mpd clients]: https://www.musicpd.org/clients/
