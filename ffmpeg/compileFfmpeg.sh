@@ -10,8 +10,7 @@ export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -
 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
 
-#FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
-FFMPEG_FEATURES=""
+FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
 
 mkdir -p "$PREFIX"
 
@@ -47,10 +46,6 @@ installFfmpegToolingDependencies() {
 		libxcb-dev libxcb-static
 
 	echo
-}
-
-installDependencies() {
-	FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-libv4l2 --enable-indev=v4l2"
 }
 
 dirtyHackForBrotli() {
