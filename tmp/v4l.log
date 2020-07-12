@@ -1,0 +1,302 @@
+   0 /host/draft.sh 
+   1 test 1==1
+   2 echo $
+   3 test 1==2
+   4 echo $?
+   5 pkg-config --exists kjs
+   6 echo $?
+   7 ll /opt/ffmpeg/
+   8 alias ll='ls -la'
+   9 ll /opt/ffmpeg/
+  10 /host/draft.sh 
+  11 ll /usr/lib/
+  12 if [ -e /usr/lib/libbrotlicommon.a ]; then echo "OK"; fi
+  13 if [[ -e /usr/lib/libbrotlicommon.a ]]; then echo "OK"; fi
+  14 if [[ ! -e /usr/lib/libbrotlicommon.a ]]; then echo "OK"; fi
+  15 /host/draft.sh && echo $?
+  16 ll /opt/ffmpeg/lib/pkgconfig/
+  17 pkg-config --exists freetype
+  18 echo $?
+  19 export PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig"
+  20 pkg-config --exists freetype
+  21 echo $?
+  22 pkg-config --exists freetype2
+  23 echo $?
+  24 [[ pkg-config --exists freetype2 ]] && echo "skipping already built freetype2" || echo "TODO"
+  25 [[ $(pkg-config --exists freetype2) ]] && echo "skipping already built freetype2" || echo "TODO"
+  26 [[ $(pkg-config --exists freetype) ]] && echo "skipping already built freetype2" || echo "TODO"
+  27 test pkg-config --exists freetype && echo "skipping already built freetype2" || echo "TODO"
+  28 test (pkg-config --exists freetype) && echo "skipping already built freetype2" || echo "TODO"
+  29 test [ pkg-config --exists freetype ] && echo "skipping already built freetype2" || echo "TODO"
+  30 [ pkg-config --exists freetype ] && echo "skipping already built freetype2" || echo "TODO"
+  31 [ -z $(pkg-config --exists freetype) ] && echo "skipping already built freetype2" || echo "TODO"
+  32 [ -z $(pkg-config --exists freetype2) ] && echo "skipping already built freetype2" || echo "TODO"
+  33 pkg-config --exists --show-errors freetype
+  34 pkg-config --help
+  35 pkg-config --exists --static --validate --print-errors freetype
+  36 pkg-config --exists --static --validate --print-errors freetype2
+  37 pkg-config --exists --static --print-errors freetype2
+  38 [ -z $(pkg-config --exists --static --print-errors freetype2) ] && echo "skipping already built freetype2" || echo "TODO"
+  39 [ `pkg-config --exists --static --print-errors freetype; print $?` ] && echo "skipping already built freetype2" || echo "TODO"
+  40 [ `pkg-config --exists --static --print-errors freetype; print $?` -eq 0 ] && echo "skipping already built freetype2" || echo "TODO"
+  41 [ `pkg-config --exists --static --print-errors freetype2; print $?` -eq 0 ] && echo "skipping already built freetype2" || echo "TODO"
+  42 [ `pkg-config --exists --static --print-errors freetype2; echo $?` -eq 0 ] && echo "skipping already built freetype2" || echo "TODO"
+  43 [ `pkg-config --exists --static --print-errors freetype; echo $?` -eq 0 ] && echo "skipping already built freetype2" || echo "TODO"
+  44 [ `pkg-config --exists --static freetype; echo $?` -eq 0 ] && echo "skipping already built freetype2" || echo "TODO"
+  45 [ `pkg-config --exists --static freetype2; echo $?` -eq 0 ] && echo "skipping already built freetype2" || echo "TODO"
+  46 /host/draft.sh 
+  47 ll /opt/ffmpeg/lib/pkgconfig/
+  48 /host/draft.sh 
+  49 ll /opt/ffmpeg/lib/pkgconfig/
+  50 /host/draft.sh 
+  51 ll /opt/ffmpeg/lib/pkgconfig/
+  52 /host/draft.sh 
+  53 ll /opt/ffmpeg/lib/pkgconfig/
+  54 cd /tmp/webp/
+  55 cd libwebp/
+  56 ll
+  57 ./configure --help
+  58 ./configure --help | less
+  59 apk update
+  60 apk search gif
+  61 /host/draft.sh 
+  62 ll /opt/ffmpeg/lib/pkgconfig/
+  63 /host/draft.sh 
+  64 ll /opt/ffmpeg/lib/pkgconfig/
+  65 ll /opt/ffmpeg/lib/
+  66 ll /opt/ffmpeg/lib/pkgconfig/
+  67 pkg-config --exists --static libmp3lame
+  68 echo $?
+  69 pkg-config --list
+  70 pkg-config --list-all
+  71 pkg-config --list-all | grep lame
+  72 cd /tmp/mp3lame/
+  73 ll
+  74 cd lame-3.100/
+  75 ll
+  76 ./configure --help
+  77 pkg-config --list-all | grep mp3
+  78 cat /opt/ffmpeg/lib/pkgconfig/libass.pc 
+  79 ll /opt/ffmpeg/lib/
+  80 /host/draft.sh 
+  81 ll /opt/ffmpeg/lib/
+  82 ll /opt/ffmpeg/lib/pkgconfig/
+  83 /host/draft.sh 
+  84 ll /opt/ffmpeg/lib/pkgconfig/
+  85 /host/draft.sh 
+  86 ll /opt/ffmpeg/lib/pkgconfig/
+  87 /host/draft.sh 
+  88 ll /opt/ffmpeg/lib/pkgconfig/
+  89 /host/draft.sh 
+  90 ll /opt/ffmpeg/lib/pkgconfig/
+  91 /host/draft.sh 
+  92 apk add libbluray-dev
+  93 pkg-config --exists libbluray
+  94 echo $?
+  95 cd /tmp/ffmpeg/ffmpeg/ffbuild/
+  96 cat config.log 
+  97  libtool --help
+  98  libtool --help | less
+  99 head /host/draft.sh 
+ 100 env
+ 101 DIR=/tmp/libbluray
+ 102 mkdir $DIR
+ 103 cd $DIR
+ 104 vim /host/draft.sh 
+ 105 apk update
+ 106 apk add vim
+ 107 vim /host/draft.sh 
+ 108  /host/draft.sh 
+ 109 vim /host/draft.sh 
+ 110  /host/draft.sh 
+ 111 cd /tmp/ffmpeg/ffmpeg/ffbuild/
+ 112 cat config.log 
+ 113 DIR=/tmp/v4l
+ 114 mkdir $DIR
+ 115 cd $DIR
+ 116 /tmp/ffmpeg/ffmpeg/configure --help | less
+ 117 /host/draft.sh 
+ 118 apk search v4l
+ 119 git clone --depth 1 https://github.com/gjasny/v4l-utils.git
+ 120 apk del v4l-utils-dev
+ 121 cd v4l-utils/
+ 122 ll
+ 123 apk update
+ 124 apk search graphviz
+ 125 apk add graphviz-dev
+ 126 apk search libas
+ 127 apk search libasound
+ 128 apk add alsa-lib
+ 129 apk search opengl
+ 130 apk search ogl
+ 131 apk search mesa
+ 132 apk add mesa-dev
+ 133 apk search libudev
+ 134 apk add eudev-dev
+ 135 apk search libx11
+ 136 apk add libx11-dev
+ 137 apk search udev
+ 138 history
+ 139 apk add alsa-lib-devel
+ 140 apk search qtbase
+ 141 apk add qt5-qtbase-dev
+ 142 apk search libglu
+ 143 apk search freeglut
+ 144 ./bootstrap.sh 
+ 145 env
+ 146 export PREFIX=/opt/ffmpeg
+ 147 export PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:/share/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig"
+ 148 export LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib"
+ 149 export MAKEFLAGS=-j2
+ 150 export CFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
+ 151 export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
+ 152 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ 153 LDFLAGS="-Wl,-z,relro,-z,now"
+ 154 ./configure --help
+ 155 ./configure --help | less
+ 156 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 157 wget https://patchwork.kernel.org/patch/7117581/mbox/ -O argp.h.patch
+ 158 patch configure.ac < argp.h.patch 
+ 159 patch -R configure.ac < argp.h.patch 
+ 160 git diff
+ 161 apk search argp
+ 162 apk add argp-standalone
+ 163 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 164 apk search alsa
+ 165 apk add alsa-lib-dev
+ 166 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 167 apk search sdl
+ 168 apk add sdl-dev sdl-static
+ 169 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 170 apk search glu
+ 171 apk add glu-dev
+ 172 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 173 apk search pthread
+ 174 apk add libevent-dev
+ 175 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 176 apk search pthread
+ 177 apk add libpthread-stubs
+ 178 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 179 history
+ 180 # omit pthread-stubs & libevent
+ 181 apk search gconv
+ 182 apk search iconv
+ 183 apk add gnu-libiconv-dev
+ 184 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 185 ./configure --help
+ 186 make && make install
+ 187 ll
+ 188 env
+ 189 export MAKEFLAGS=-j1
+ 190 make && make install
+ 191 ll
+ 192 grep -rnw . -e 'v4lcontrol_create'
+ 193 vim lib/libv4lconvert/control/libv4lcontrol.h 
+ 194 grep -rnw . -e 'sys/types.h'
+ 195 grep -rnw . -e 'include <sys/types.h' | less
+ 196 grep -rnw . -e 'include <sys/types.h>' | less
+ 197 grep -rnw . -e 'include <sys/types.h>' | awk -FS=":" '{print $1}'
+ 198 grep -rnw . -e 'include <sys/types.h>' > _sys_types_h.lst
+ 199 find . -type f -n "*.cpp"
+ 200 find . -type f -name "*.cpp"
+ 201 find . -type f -name "*.cpp|*.c"
+ 202 find . -type f | grep -Ei "*.(c)$"
+ 203 find . -type f | grep -Ei "*.\(c\)$"
+ 204 find . -type f | grep -Ei ".*\.\(c\)$"
+ 205 find . -type f | grep -Ei ".*\.(c)$"
+ 206 find . -type f | grep -Ei ".*\.(c|h)$"
+ 207 find . -type f | grep -Ei ".*\.(c|h|cpp)$"
+ 208 cat _sys_types_h.lst 
+ 209 vim _sys_types_h.lst 
+ 210 cat ./lib/libdvbv5/dvb-scan.c
+ 211 cat -n ./lib/libdvbv5/dvb-scan.c
+ 212 find . -type f | grep -Ei ".*\.(h)$"
+ 213 grep -Ril "# ?include <sys/types.h>"
+ 214 grep -Ril "# ?include <sys/types.h>" .
+ 215 grep -Ril . -e  "# ?include <sys/types.h>"
+ 216 grep -rnw . -e  "# ?include <sys/types.h>"
+ 217 grep -rnw . -e 'include <sys/types.h>'
+ 218 grep --include="*.(c|h|cpp)" -rnw . -e 'include <sys/types.h>'
+ 219 grep --include=\*.{c|h} -rnw . -e 'include <sys/types.h>'
+ 220 grep -inr "<sys/types.h>" .
+ 221 grep -ilr "<sys/types.h>" .
+ 222 grep --help
+ 223 grep -ilr "<sys/types.h>" -f "*.c" . 
+ 224 grep -ilr "<sys/types.h>" . | grep -E "[^:]*\.h:"
+ 225 grep -ilr "<sys/types.h>" . | grep -E "\.h:"
+ 226 grep -ilr "<sys/types.h>" . 
+ 227 grep -ilr "<sys/types.h>" . | grep -E ".c$"
+ 228 grep -ilr "<sys/types.h>" . | grep -E ".(c|h)$"
+ 229 grep -ilr "<sys/types.h>" . | grep -E ".(c|h|cpp)$"
+ 230 vim config.h
+ 231 grep -ilr "<sys/types.h>" . | grep -E ".(c|h|cpp)$"
+ 232 grep -ilr -e "<sys/types.h>" . | grep -E ".(c|h|cpp)$"
+ 233 grep -ilr -e "include ?<sys/types.h>" . | grep -E ".(c|h|cpp)$"
+ 234 grep -ilr -e "# ?include ?<sys/types.h>" . | grep -E ".(c|h|cpp)$"
+ 235 grep -ilr -e "# ?include ?<sys/types.h>" . | grep -E "\.(c|h|cpp)$"
+ 236 grep -ilr -e "# ?include ?<sys/types.h>" . | grep -E "\\.(c|h|cpp)$"
+ 237 grep -ilr -e "# ?include ?<sys/types.h>" . | grep -E "\.(c|h|cpp)$"
+ 238 grep -ilr -e "include ?<sys/types.h>" . | grep -E "\.(c|h|cpp)$"
+ 239 grep -ilr -e "<sys/types.h>" . | grep -E "\.(c|h|cpp)$"
+ 240 grep -ilr -e "[[:blank:]]?<sys/types.h>" . | grep -E "\.(c|h|cpp)$"
+ 241 grep -ilr -e "include.?<sys/types.h>" . | grep -E "\.(c|h|cpp)$"
+ 242 history | grep configure
+ 243 ./configure --help | less
+ 244 history | grep configure
+ 245 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc -WError
+ 246 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc
+ 247 make clean
+ 248 make
+ 249 grep -ilr -e "<sys/types.h>" . | grep -E "\.(c|h|cpp)$" > _sys_types_h.lst 
+ 250 vim /tmp/v4l/v4l-utils/utils/v4l2-compliance/v4l2-compliance.h 
+ 251 vim config.h
+ 252 make clean
+ 253 make
+ 254 vim utils/
+ 255 make clean
+ 256 make
+ 257 cat _sys_types_h.lst | grep compl
+ 258 vim utils/v4l2-compliance/v4l2-compliance.cpp 
+ 259 make clean && make
+ 260 cat _sys_types_h.lst | grep control
+ 261 vim ./lib/libv4lconvert/control/libv4lcontrol.c
+ 262 make clean && make
+ 263 vim config.h
+ 264 make clean
+ 265 make
+ 266 cat _sys_types_h.lst | grep "-ctl"
+ 267 cat _sys_types_h.lst | grep -- "-ctl"
+ 268 vim ./utils/v4l2-ctl/v4l2-ctl.cpp
+ 269 git status
+ 270 rm argp.h.patch 
+ 271 make clean && make
+ 272 vim ./utils/v4l2-ctl/v4l2-ctl.cpp
+ 273 make clean && make
+ 274 find . -type f -name "dvb-dev-local.c"
+ 275 vim lib/libdvbv5/dvb-dev-local.c
+ 276 make clean && make
+ 277 gcc --version
+ 278 which gcc
+ 279 ll /usr/bin/gcc
+ 280 vim lib/libdvbv5/dvb-dev-local.c
+ 281 make clean && make
+ 282 apk search glew
+ 283 apk add glew-dev
+ 284 make clean && make
+ 285 find . -type f -name "capture-win-gl.cpp"
+ 286 vim ./utils/qv4l2/capture-win-gl.cpp
+ 287 make clean && make
+ 288 make clean
+ 289 ./configure --help | less
+ 290 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc --with-gnu-ld
+ 291 ./configure --help | less
+ 292 ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes --disable-doxygen-doc --with-gnu-ld --disable-libdvbv5 --disable-dyn-libv4l --disable-v4l-utils --disable-v4l2-compliance-libv4l --disable-v4l2-ctl-libv4l --disable-qv4l2
+ 293 make clean && make install
+ 294 echo $?
+ 295 ll /opt/ffmpeg/lib/
+ 296 ll /opt/ffmpeg/lib/pkgconfig/
+ 297 make install
+ 298 ll /opt/ffmpeg/lib/pkgconfig/
+ 299 ll /opt/ffmpeg/lib/
+ 300 ll lib/libv4l2/*
+ 301 history > /host/v4l.log

@@ -24,7 +24,8 @@ ALPINE_DOWNLOAD_URL="http://dl-cdn.alpinelinux.org/alpine/v${ALPINE_MAJOR_MINOR}
 export DOCKER_BUILDKIT=1
 
 # prepare build vars
-FEATURES=(ydl)
+## features lists all features that CAN be built
+FEATURES=(ydl ffmpeg)
 
 ## common - current user/group and path
 export GUID=$(id -g)
@@ -33,3 +34,4 @@ for FILENAME in _set_env/set_env_*.sh; do
 	#echo "... ... sourcing $FILENAME"
 	source "$FILENAME"
 done
+
