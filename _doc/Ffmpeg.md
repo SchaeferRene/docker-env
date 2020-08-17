@@ -39,7 +39,7 @@ The script compiles a static version of ffmpeg with hardened toolchain, containi
 - todo:
     - opencv
     - hardware acceleration
-    - optimizations for Raspberry Pi
+    - optimizations for Raspberry Pi, Nvidia, Mali
 
 # Links
 These are the main resources that helped me most in creating this script:
