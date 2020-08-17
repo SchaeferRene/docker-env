@@ -81,7 +81,7 @@ function tag_image {
 	
 	for T in latest ${ALPINE_VERSION}; do
 		TAG=$IMAGE_NAME:$T
-		echo -e "\n... ... ... tagging as $TAG"
+		echo -e "... ... ... tagging as $TAG"
 		docker tag $IMAGE_NAME $TAG
 		push_image $TAG
 	done
@@ -109,7 +109,7 @@ IS_PUSH_IMAGES=1
 IS_FOLLOW_LOGS=1
 IS_RUN_BASE=1
 # holds images that are considered base images
-BASE_IMAGES=(base ffmpeg)
+BASE_IMAGES=(base)
 # holds images that WILL be BUILT
 BUILD_IMAGES=()
 # holds images that WILL be DEPLOYED
@@ -133,9 +133,9 @@ while [[ $# -gt 0 ]]; do
         -r|--run)
         IS_RUN_BASE=0
         ;;
-	--ffmpeg)
-	BUILD_IMAGES+=("ffmpeg")
-	;;
+		--ffmpeg)
+		BASE_IMAGES+=("ffmpeg")
+		;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")
 #        ;;
