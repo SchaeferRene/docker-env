@@ -24,7 +24,7 @@ function usage {
 	#echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
-	echo "		--privoxy	Build privoxy image"
+	echo "      --privoxy   Build privoxy image"
 	echo "      --ydl, --youtube-dl"
 	echo "                  Build youtube-dl image"
 
