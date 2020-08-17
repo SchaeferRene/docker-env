@@ -24,6 +24,7 @@ function usage {
 	#echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
+	echo "      --privoxy   Build privoxy image"
 	echo "      --ydl, --youtube-dl"
 	echo "                  Build youtube-dl image"
 
@@ -143,6 +144,9 @@ while [[ $# -gt 0 ]]; do
         ;;
         --nginx)
         BUILD_IMAGES+=("nginx")
+        ;;
+        --privoxy)
+        BUILD_IMAGES+=("privoxy")
         ;;
         --ydl|--youtube-dl)
         BUILD_IMAGES+=("ydl")
