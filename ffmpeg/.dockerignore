@@ -1,4 +1,2 @@
 .dockerignore
 Dockerfile
-compileFfmpeg.sh
-
