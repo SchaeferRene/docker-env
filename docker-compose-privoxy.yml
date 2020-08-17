@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  privoxy:
+    image: $DOCKER_ID/$PRIVOXY_IMAGE
+    build:
+      context: ./privoxy
+      args:
+        IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE
+        IMAGE_VERSION: $ALPINE_VERSION
+    restart: unless-stopped
+    ports:
+      - "8118:8118"

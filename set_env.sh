@@ -9,11 +9,13 @@ export ALPINE_VERSION
 export ARCH=$(uname -m)
 if [ "$ARCH" = "armv7l" ]; then export ARCH="armv7"; fi
 
+# image names to deploy and push
 export BASE_IMAGE="alpine-base-$ARCH"
 export FFMPEG_IMAGE="ffmpeg-alpine-$ARCH"
 export GITEA_IMAGE="gitea-alpine-$ARCH"
 export MPD_IMAGE="mpd-alpine-$ARCH"
 export NGINX_IMAGE="nginx-alpine-$ARCH"
+export PRIVOXY_IMAGE="privoxy-alpine-$ARCH"
 export YDL_IMAGE="youtube-dl-alpine-$ARCH"
 
 # prepare base image download URL
@@ -25,7 +27,7 @@ export DOCKER_BUILDKIT=1
 
 # prepare build vars
 ## features lists all features that CAN be built
-FEATURES=(ydl ffmpeg)
+FEATURES=(ydl ffmpeg privoxy)
 
 ## common - current user/group and path
 export GUID=$(id -g)
