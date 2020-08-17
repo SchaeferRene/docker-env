@@ -107,8 +107,11 @@ IS_BUILD_ALL=1
 IS_PUSH_IMAGES=1
 IS_FOLLOW_LOGS=1
 IS_RUN_BASE=1
-BASE_IMAGES=(base)
+# holds images that are considered base images
+BASE_IMAGES=(base ffmpeg)
+# holds images that WILL be BUILT
 BUILD_IMAGES=()
+# holds images that WILL be DEPLOYED
 DEPLOY_IMAGES=()
 
 while [[ $# -gt 0 ]]; do
@@ -130,7 +133,7 @@ while [[ $# -gt 0 ]]; do
         IS_RUN_BASE=0
         ;;
 	--ffmpeg)
-	BASE_IMAGES+=("ffmpeg")
+	BUILD_IMAGES+=("ffmpeg")
 	;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")

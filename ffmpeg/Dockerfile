@@ -28,4 +28,3 @@ RUN set -xe \
 
 ENTRYPOINT [ "ffmpeg" ]
 CMD [ "-version" ]
-
