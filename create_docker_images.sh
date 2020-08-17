@@ -218,15 +218,21 @@ fi
 
 # start building images
 echo -e "\n... building base images"
-for f in ${BASE_IMAGES[@]}; do build_image "$f"; done
+for f in ${BASE_IMAGES[@]}; do
+	build_image "$f";
+done
 
 echo -e "\n... building features"
-for f in ${FEATURES[@]}; do echo "$f"; done | sort | uniq | while read F; do build_image "$F"; done
+for f in ${FEATURES[@]}; do
+	build_image "$f";
+done
 
-if [ -n "$DEPLOY_IMAGES" ];
+DEPLOY_FILES=$(for F in ${DEPLOY_IMAGES[@]}; do echo -n "-f $F "; done)
+
+if [ -n "$DEPLOY_FILES" ];
 then
-	echo -e "\n... deploying ${BUILD_IMAGES[@]}"
-	docker-compose $DEPLOY_IMAGES up -d $DEPLOY_SWITCHES
+	echo -e "\n... deploying ${DEPLOY_IMAGES[@]}"
+	docker-compose $DEPLOY_FILES up -d $DEPLOY_SWITCHES
 fi
 
 # run base image
