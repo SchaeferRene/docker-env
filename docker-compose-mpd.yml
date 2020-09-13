@@ -21,3 +21,6 @@ services:
       - ${DOCKER_VOLUME_ROOT}/mpd/music:/var/lib/mpd/music:ro
       - ${DOCKER_VOLUME_ROOT}/mpd/playlists:/var/lib/mpd/playlists
       - ${DOCKER_VOLUME_ROOT}/mpd/state:/var/lib/mpd/state
+    cap_add:
+      - SYS_NICE
+
