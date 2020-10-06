@@ -7,11 +7,21 @@ source .env
 export DOCKER_ID
 export ALPINE_VERSION
 export ARCH=$(uname -m)
-if [ "$ARCH" = "armv7l" ]; then export ARCH="armv7"; fi
+if [ "$ARCH" = "armv7l" ]; then
+	export ARCH="armv7";
+fi
+
+# determine Debian base image
+export DEBIAN_BASE="debian:$DEBIAN_VERSION"
+if [ "$ARCH" = "armv7" ]; then
+	export DEBIAN_BASE="arm32v7/$DEBIAN_BASE";
+elif [ "$ARCH" = "aarch64" ]; then
+	export DEBIAN_BASE="arm64v8/$DEBIAN_BASE";
+fi
 
 # image names to deploy and push
 export BASE_IMAGE="alpine-base-$ARCH"
-export FFMPEG_IMAGE="ffmpeg-alpine-$ARCH"
+export FFMPEG_IMAGE="ffmpeg-debian-$ARCH"
 export GITEA_IMAGE="gitea-alpine-$ARCH"
 export MPD_IMAGE="mpd-alpine-$ARCH"
 export NGINX_IMAGE="nginx-alpine-$ARCH"

@@ -1,9 +1,6 @@
-ARG DOCKER_ID=reneschaefer
-ARG ARCH=armv7
-ARG IMAGE_TAG=$DOCKER_ID/alpine-base-$ARCH
-ARG IMAGE_VERSION=latest
+ARG DEBIAN_BASE=debian:bullseye-slim
 
-FROM ${IMAGE_TAG}:${IMAGE_VERSION} AS builder
+FROM ${DEBIAN_BASE} AS builder
 
 WORKDIR /opt/ffmpeg
 
@@ -17,7 +14,7 @@ RUN ./compileFfmpeg.sh \
 	&& test $(ldd /opt/ffmpeg/bin/ffprobe | wc -l) -eq 1
 
 # copy build artifacts
-FROM ${IMAGE_TAG}:${IMAGE_VERSION}
+FROM ${DEBIAN_BASE}
 COPY --from=builder /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe /usr/local/bin/
 COPY --from=builder /etc/ssl/cert.pem /etc/ssl/cert.pem
 
