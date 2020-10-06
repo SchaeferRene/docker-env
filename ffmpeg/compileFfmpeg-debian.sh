@@ -15,7 +15,7 @@ FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
 mkdir -p "$PREFIX"
 
 addFeature() {
-	[ $(echo "$FFMPEG_FEATURES" | grep -q "$1"; echo $?) -eq 0 ] \
+	[ $(echo "$FFMPEG_FEATURES" | grep -q -- "$1"; echo $?) -eq 0 ] \
 		|| FFMPEG_FEATURES="$FFMPEG_FEATURES $1"
 }
 
@@ -84,10 +84,8 @@ hasBeenBuilt() {
 compileOpenSsl() {
 	echo "--- Installing OpenSSL"
 
-	apk add --no-cache \
-		openssl \
-                openssl-dev \
-                openssl-libs-static
+	apt-get install -y \
+		libssl-dev
 
 	addFeature --enable-openssl
 
@@ -95,28 +93,25 @@ compileOpenSsl() {
 }
 
 compileXml2() {
-        echo "--- Installing libXml2"
+    echo "--- Installing libXml2"
 
-        apk add --no-cache \
-		zlib-dev \
-		zlib-static \
+    apt-get install -y \
 		libxml2-dev
 
-        addFeature --enable-libxml2
+    addFeature --enable-libxml2
 
-        echo
+    echo
 }
 
 compileFribidi() {
-        echo "--- Installing Fribidi"
+    echo "--- Installing Fribidi"
 
-        apk add --no-cache \
-                fribidi-dev \
-                fribidi-static
+    apt-get install -y \
+        libfribidi-dev
 
-        addFeature --enable-libfribidi
+    addFeature --enable-libfribidi
 
-        echo
+    echo
 }
 
 compileFreetype() {
@@ -135,18 +130,13 @@ compileFreetype() {
 
 		echo "--- Installing FreeType"
 
-		apk add --no-cache \
-			zlib-dev \
-			zlib-static \
-			libbz2 \
-			bzip2-dev \
-			bzip2-static \
+		apt-get install -y \
+			zlib1g-dev \
+			libbz2-dev \
 			libpng-dev \
-			libpng-static \
-			brotli-dev \
-			brotli-static
+			libbrotli-dev
 
-		dirtyHackForBrotli
+		#dirtyHackForBrotli
 
 		DIR=/tmp/freetype2
 		mkdir -p "$DIR"
@@ -679,35 +669,6 @@ compileTheora() {
 	echo
 }
 
-compileWavPack() {
-	hasBeenBuilt wavpack
-
-	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built wavpack" \
-        || {
-		echo "--- Installing wavpack"
-
-		DIR=/tmp/wavpack
-		mkdir -p "$DIR"
-        	cd "$DIR"
-
-		git clone --depth 1 https://github.com/dbry/WavPack.git
-		cd WavPack
-		./autogen.sh
-
-		./configure \
-			--prefix="$PREFIX" \
-			--enable-shared=no \
-			--enable-static=yes
-
-		make && make install
-	}
-
-	addFeature --enable-libwavpack
-
-	echo
-}
-
 compileSpeex() {
 	hasBeenBuilt speex
 
@@ -838,16 +799,17 @@ compileX264() {
 compileX265() {
 	hasBeenBuilt x265
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built x265" \
-        || {
-                echo "--- Installing x265"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built x265" \
+    || {
+        echo "--- Installing x265"
 
     	DIR=/tmp/x265
     	mkdir -p "$DIR"
 		cd "$DIR"
 
-		git clone --depth 1 https://github.com/videolan/x265.git
+		# x265 does not create .pc file if not built from in-depth repo
+		git clone https://github.com/videolan/x265.git
 		cd x265/build/linux/
 
 		cmake -G "Unix Makefiles" \
@@ -974,7 +936,7 @@ compileFfmpeg() {
 	apt-get install -y zlib1g-dev
 
 	DIR=/tmp/ffmpeg
-	if [ -d "" ]; then
+	if [ -d "$DIR" ]; then
 	    rm -rf "$DIR"
 	fi
 	mkdir -p "$DIR"
@@ -1004,10 +966,10 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	compileOpenSsl
+	#compileOpenSsl
 	#compileXml2
 	#compileFribidi
-	#compileFreetype
+	compileFreetype
 	#compileFontConfig
 	#compileZimg
 	#compileVidStab
@@ -1026,7 +988,6 @@ compileAudioCodecs() {
 	#compileMp3Lame
 	#compileFdkAac
 	#compileTheora
-	#compileWavPack
 	#compileSpeex
 }
 
@@ -1041,10 +1002,10 @@ compileVideoCodecs() {
 }
 
 installFfmpegToolingDependencies
-#compileSupportingLibs
+compileSupportingLibs
 #compileImageLibs
 #compileAudioCodecs
-compileVideoCodecs
+#compileVideoCodecs
 
 # almost there
 compileFfmpeg
