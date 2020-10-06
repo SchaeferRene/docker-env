@@ -60,10 +60,11 @@ dirtyHackForBrotli() {
 }
 
 sanityCheck() {
+	RC=$?
 	echo
-	echo "--- Compilation status: " $?
+	echo "--- Compilation status: " $RC
 
-	if [[ $? -eq 0 ]]; then
+	if [[ $RC -eq 0 ]]; then
 		for PRG in ffmpeg ffprobe ffplay
 		do
 			PRG="$PREFIX/bin/$PRG"
@@ -687,35 +688,6 @@ compileTheora() {
 	echo
 }
 
-compileWavPack() {
-	hasBeenBuilt wavpack
-
-	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built wavpack" \
-        || {
-		echo "--- Installing wavpack"
-
-		DIR=/tmp/wavpack
-		mkdir -p "$DIR"
-        	cd "$DIR"
-
-		git clone --depth 1 https://github.com/dbry/WavPack.git
-		cd WavPack
-		./autogen.sh
-
-		./configure \
-			--prefix="$PREFIX" \
-			--enable-shared=no \
-			--enable-static=yes
-
-		make && make install
-	}
-
-	addFeature --enable-libwavpack
-
-	echo
-}
-
 compileSpeex() {
 	hasBeenBuilt speex
 
@@ -846,18 +818,16 @@ compileX264() {
 compileX265() {
 	hasBeenBuilt x265
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built x265" \
-        || {
-                echo "--- Installing x265"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built x265" \
+    || {
+        echo "--- Installing x265"
 
-		apk add --no-cache mercurial
-
-        	DIR=/tmp/x265
-        	mkdir -p "$DIR"
+    	DIR=/tmp/x265
+    	mkdir -p "$DIR"
 		cd "$DIR"
 
-		hg clone https://bitbucket.org/multicoreware/x265
+		git clone https://github.com/videolan/x265.git
 		cd x265/build/linux/
 
 		cmake -G "Unix Makefiles" \
@@ -984,6 +954,9 @@ compileFfmpeg() {
 	apk add zlib-dev zlib-static
 
 	DIR=/tmp/ffmpeg
+	if [ -d "$DIR" ]; then
+	    rm -rf "$DIR"
+	fi
 	mkdir -p "$DIR"
 	cd "$DIR"
 
@@ -1033,7 +1006,6 @@ compileAudioCodecs() {
 	compileMp3Lame
 	compileFdkAac
 	compileTheora
-	compileWavPack
 	compileSpeex
 }
 
@@ -1044,8 +1016,7 @@ compileVideoCodecs() {
 	compileAom
 	compileKvazaar
 	compileDav1d
-	# didnt get x265 to work yet
-	#compileX265
+	compileX265
 }
 
 installFfmpegToolingDependencies

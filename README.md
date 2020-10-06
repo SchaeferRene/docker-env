@@ -75,6 +75,7 @@ script to launch a base image for doing some evaluations.
 * *build git hoster [gitea] for your private repositories*
 * guacamole
 * wireguard
+* cups with splix + AirPrint
 
 [ffmpeg]: https://ffmpeg.org
 [gitea]: https://gitea.io/en-us/
