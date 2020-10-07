@@ -7,7 +7,7 @@ WORKDIR /opt/ffmpeg
 COPY compileFfmpeg.sh .
 
 # build ffmpeg
-RUN ./compileFfmpeg.sh \
+RUN ./compileFfmpeg-alpine.sh \
 # make sure binaries have no additional dependencies
 	&& set -xe \
 	&& test $(ldd /opt/ffmpeg/bin/ffmpeg | wc -l) -eq 1 \

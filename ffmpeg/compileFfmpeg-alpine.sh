@@ -10,8 +10,6 @@ export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -
 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
 
-FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
-
 mkdir -p "$PREFIX"
 
 addFeature() {
@@ -21,7 +19,8 @@ addFeature() {
 
 installFfmpegToolingDependencies() {
 	echo "--- Installing Tooling Dependencies"
-
+	set -e
+	
 	# below dependencies are required to build core ffmpeg according to generic compilation guide
 	apk add --no-cache --update \
 		build-base \
@@ -45,6 +44,7 @@ installFfmpegToolingDependencies() {
 		sdl2-dev sdl2-static sdl2_ttf-dev \
 		libxcb-dev libxcb-static
 
+	set +e
 	echo
 }
 
@@ -944,6 +944,9 @@ compileDav1d() {
 }
 
 compileFfmpeg() {
+	# add position independent code per default
+	addFeature --enable-pic
+	
 	FFMPEG_OPTIONS="--disable-shared --enable-static "
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc "
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3 "

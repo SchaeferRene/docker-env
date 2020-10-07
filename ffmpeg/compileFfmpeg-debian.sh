@@ -10,8 +10,6 @@ export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -
 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
 
-FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
-
 mkdir -p "$PREFIX"
 
 addFeature() {
@@ -21,6 +19,7 @@ addFeature() {
 
 installFfmpegToolingDependencies() {
 	echo "--- Refreshing system"
+	set -e
 	apt-get update -q
 	apt-get full-upgrade -y
 	
@@ -47,6 +46,7 @@ installFfmpegToolingDependencies() {
 		libsdl2-dev \
 		libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev
 
+	set +e
 	echo
 }
 
@@ -77,30 +77,57 @@ hasBeenBuilt() {
 	else
 		PCP=$OWN_PKG_CONFIG_PATH
 	fi
-	RESULT=$(PKG_CONFIG_PATH="$PCP" pkg-config --exists --no-cache --env-only --static --print-errors $1; echo $?)
+	RESULT=$(PKG_CONFIG_PATH="$PCP" pkg-config --exists --static --print-errors $1; echo $?)
 	echo
 }
 
 compileOpenSsl() {
 	echo "--- Installing OpenSSL"
-
+	set -e
+	
 	apt-get install -y \
 		libssl-dev
 
+	set +e
+	
 	addFeature --enable-openssl
 
 	echo
 }
 
 compileXml2() {
-    echo "--- Installing libXml2"
+	hasBeenBuilt libxml-2.0
 
-    apt-get install -y \
-		libxml2-dev
+	[ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built libXml2" \
+    || {
+		echo "--- Installing libXml2"
+		
+	    apt-get install -y \
+	    	zlib1g-dev \
+			lzma-dev
+		
+		DIR=/tmp/libxml2
+		mkdir -p "$DIR"
+		cd "$DIR"
+		
+		wget https://gitlab.gnome.org/GNOME/libxml2/-/archive/master/libxml2-master.tar.gz -O libxml2-master.tar.gz
+		tar -xf libxml2-master.tar.gz
+		
+		cd libxml2-master
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-static=yes \
+			--enable-shared=no \
+			--disable-dependency-tracking
 
-    addFeature --enable-libxml2
+		make && make install
+	}
 
-    echo
+	addFeature --enable-libxml2
+
+	echo
 }
 
 compileFribidi() {
@@ -132,11 +159,10 @@ compileFreetype() {
 
 		apt-get install -y \
 			zlib1g-dev \
+			lzma-dev \
 			libbz2-dev \
 			libpng-dev \
 			libbrotli-dev
-
-		#dirtyHackForBrotli
 
 		DIR=/tmp/freetype2
 		mkdir -p "$DIR"
@@ -267,28 +293,28 @@ compileCairo() {
 compileGraphite2() {
 	hasBeenBuilt graphite2
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Graphite2" \
-        || {
-                echo "--- Installing Graphite2"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Graphite2" \
+    || {
+            echo "--- Installing Graphite2"
 
-                DIR=/tmp/graphite2
-                mkdir -p "$DIR"
-                cd "$DIR"
+            DIR=/tmp/graphite2
+            mkdir -p "$DIR"
+            cd "$DIR"
 
-                git clone --depth 1 https://github.com/silnrsi/graphite.git
-                cd graphite
+            git clone --depth 1 https://github.com/silnrsi/graphite.git
+            cd graphite
 
-                mkdir build
-                cd build
+            mkdir build
+            cd build
 
-                cmake \
-                        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-                        -DBUILD_SHARED_LIBS=OFF \
-                        ..
+            cmake \
+                    -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+                    -DBUILD_SHARED_LIBS=OFF \
+                    ..
 
-                make && make install
-        }
+            make && make install
+    }
 	
 	echo
 }
@@ -298,44 +324,44 @@ compileHarfbuzz () {
 	BUILDING_HARFBUZZ=1
 	hasBeenBuilt harfbuzz
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Harfbuzz" \
-        || {
-		compileCairo	# compiles fontconfig compiles freetype
-				# installs glib
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Harfbuzz" \
+    || {
+	compileCairo	# compiles fontconfig compiles freetype
+			# installs glib
 
-		# Harfbuzz doesn't seem to like statically compiled Graphite2
-		#compileGraphite2
+	# Harfbuzz doesn't seem to like statically compiled Graphite2
+	#compileGraphite2
 
-                echo "--- Installing Harfbuzz"
+        echo "--- Installing Harfbuzz"
 
-                apk add --no-cache \
-			icu-dev \
-			icu-static
+        apk add --no-cache \
+		icu-dev \
+		icu-static
 
-                DIR=/tmp/harfbuzz
-                mkdir -p "$DIR"
-                cd "$DIR"
+        DIR=/tmp/harfbuzz
+        mkdir -p "$DIR"
+        cd "$DIR"
 
-                git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
-                cd harfbuzz
+        git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
+        cd harfbuzz
 
-                ./autogen.sh
-                ./configure \
-                        --prefix="$PREFIX" \
-                        --enable-shared=no \
-                        --enable-static=yes \
-			#--with-graphite2
+        ./autogen.sh
+        ./configure \
+                --prefix="$PREFIX" \
+                --enable-shared=no \
+                --enable-static=yes \
+		#--with-graphite2
 
-                make && make install
+            make && make install
 
-        	echo
+    	echo
 
 		# force recompilation of freetype
 		rm "$PREFIX/lib/pkgconfig/freetype.pc"
 		rm -rf "/tmp/freetype"
 		compileFreetype
-        }
+    }
 }
 
 
@@ -926,6 +952,9 @@ compileDav1d() {
 }
 
 compileFfmpeg() {
+	# add position independent code per default
+	addFeature --enable-pic
+
 	FFMPEG_OPTIONS="--disable-shared --enable-static "
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc "
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3 "
@@ -942,8 +971,11 @@ compileFfmpeg() {
 	mkdir -p "$DIR"
 	cd "$DIR"
 
+	set -e
 	wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 	tar xjf ffmpeg-snapshot.tar.bz2
+	set +e
+	
 	cd ffmpeg/
 
 	./configure \
@@ -966,10 +998,10 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	#compileOpenSsl
+	compileOpenSsl
 	#compileXml2
 	#compileFribidi
-	compileFreetype
+	#compileFreetype
 	#compileFontConfig
 	#compileZimg
 	#compileVidStab
@@ -1002,7 +1034,7 @@ compileVideoCodecs() {
 }
 
 installFfmpegToolingDependencies
-compileSupportingLibs
+#compileSupportingLibs
 #compileImageLibs
 #compileAudioCodecs
 #compileVideoCodecs
