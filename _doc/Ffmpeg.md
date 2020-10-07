@@ -16,7 +16,7 @@ The script compiles a static version of the latest snapshot release ffmpeg with 
     - with _freetype_
     - freetype								@latest from git
         - with _xml2_
-        - with harfbuzz					@latest from git (not Alpine)
+        - with ~~harfbuzz~~				@latest from git
             - with _freetype_
             - with cairo					@latest from git
                 - with pixman			@latest from repo
