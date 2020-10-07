@@ -186,7 +186,7 @@ for f in ${BUILD_IMAGES[@]}; do echo "$f"; done | sort | uniq | while read FEATU
 		exit 2
 	fi
 done
-echo "... ... ... put ${BUILD_IMAGES[@]} on agenda"
+echo "... ... ... put ${BASE_IMAGES[@]} ${BUILD_IMAGES[@]} on agenda"
 
 # check required programs
 echo "... ... checking required programs"

@@ -5,6 +5,9 @@ ARG IMAGE_VERSION=latest
 
 FROM ${IMAGE_TAG}:${IMAGE_VERSION} AS builder
 
+# build switches
+ARG BUILDING_HARFBUZZ
+
 WORKDIR /opt/ffmpeg
 
 COPY compileFfmpeg-alpine.sh .

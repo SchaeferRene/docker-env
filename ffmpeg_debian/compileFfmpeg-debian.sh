@@ -180,7 +180,7 @@ compileFreetype() {
 		set +e
 
 		./autogen.sh
-		./configure \
+		PKG_CONFIG_PATH="$PKG_CONFIG_PATH" ./configure \
 			--prefix="$PREFIX" \
 			--enable-shared=no \
 			--enable-static=yes \
@@ -217,24 +217,25 @@ compileFontConfig() {
 		set -e
         apt-get install -y \
 	        libpng-dev \
-			libexpat-dev
+			libexpat-dev \
+			gperf
 
 		DIR=/tmp/fontconfig
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		wget https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.12.1.tar.bz2 \
-			-O fontconfig.tar.bz2
-		tar xjf fontconfig.tar.bz2
-		rm fontconfig.tar.bz2
-		cd "$(ls)"
+		wget https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.gz \
+			-O fontconfig.tar.gz
+		tar -xf fontconfig.tar.gz
+		cd fontconfig-2.13.92
 		set +e
 
-		./configure \
+		PKG_CONFIG_PATH="$PKG_CONFIG_PATH" ./configure \
 			--prefix="$PREFIX" \
 			--enable-static=yes \
 			--enable-shared=no \
-			--disable-docs
+			--disable-docs \
+			--disable-dependency-tracking
 
 		make && make install
 
@@ -305,25 +306,25 @@ compileGraphite2() {
     [ $RESULT -eq 0 ] \
     && echo "--- Skipping already built Graphite2" \
     || {
-            echo "--- Installing Graphite2"
-
-            DIR=/tmp/graphite2
-            mkdir -p "$DIR"
-            cd "$DIR"
-
-			set -e
-            git clone --depth 1 https://github.com/silnrsi/graphite.git
-
-            mkdir -p graphite/build
-            cd graphite/build
-            set +e
-
-            cmake \
-                    -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-                    -DBUILD_SHARED_LIBS=OFF \
-                    ..
-
-            make && make install
+	    echo "--- Installing Graphite2"
+	
+	    DIR=/tmp/graphite2
+	    mkdir -p "$DIR"
+	    cd "$DIR"
+	
+		set -e
+	    git clone --depth 1 https://github.com/silnrsi/graphite.git
+	
+	    mkdir -p graphite/build
+	    cd graphite/build
+	    set +e
+	
+	    cmake \
+	        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+	        -DBUILD_SHARED_LIBS=OFF \
+	        ..
+	
+	    make && make install
     }
 	
 	echo
@@ -341,7 +342,7 @@ compileHarfbuzz () {
 						# installs glib
 
 		# Harfbuzz doesn't seem to like statically compiled Graphite2
-		#compileGraphite2
+		compileGraphite2
 
         echo "--- Installing Harfbuzz"
 
@@ -455,7 +456,6 @@ compileVidStab() {
 
 		set -e
 		git clone --depth 1 https://github.com/georgmartius/vid.stab.git
-		
 		mkdir -p vid.stab/build
 		cd vid.stab/build
 		set +e
@@ -1010,6 +1010,7 @@ compileFfmpeg() {
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3 "
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS $FFMPEG_FEATURES"
 
+	echo
 	echo "--- Compiling ffmpeg with features $FFMPEG_OPTIONS"
 
 	set -e
@@ -1055,21 +1056,24 @@ compileSupportingLibs() {
 	#compileZimg
 	#compileVidStab
 	#compileAss
+	:					#NOOP
 }
 
 compileImageLibs() {
-	compileOpenJpeg
+	#compileOpenJpeg
 	#compileWebp
+	:					#NOOP
 }
 
 compileAudioCodecs() {
-	compileSoxr
+	#compileSoxr
 	#compileOpus
 	#compileVorbis
 	#compileMp3Lame
 	#compileFdkAac
 	#compileTheora
 	#compileSpeex
+	:					#NOOP
 }
 
 compileVideoCodecs() {
@@ -1079,14 +1083,15 @@ compileVideoCodecs() {
 	#compileAom
 	#compileKvazaar
 	#compileDav1d
-	compileX265
+	#compileX265
+	:					#NOOP
 }
 
 installFfmpegToolingDependencies
 compileSupportingLibs
-#compileImageLibs
-#compileAudioCodecs
-#compileVideoCodecs
+compileImageLibs
+compileAudioCodecs
+compileVideoCodecs
 
 # almost there
 compileFfmpeg

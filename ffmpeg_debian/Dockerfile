@@ -2,6 +2,9 @@ ARG DEBIAN_BASE=debian:bullseye-slim
 
 FROM ${DEBIAN_BASE} AS builder
 
+# build switches
+ARG BUILDING_HARFBUZZ
+
 WORKDIR /opt/ffmpeg
 
 COPY compileFfmpeg-debian.sh .

@@ -40,7 +40,7 @@ installFfmpegToolingDependencies() {
 	# TODO: clarify: below dependencies might be for ffplay only
 	echo "--- Installing ffmpeg build Dependencies"
 	apk add --no-cache \
-		libva-dev \
+		libva-dev libvdpau-dev \
 		sdl2-dev sdl2-static sdl2_ttf-dev \
 		libxcb-dev libxcb-static
 
@@ -92,40 +92,49 @@ hasBeenBuilt() {
 
 compileOpenSsl() {
 	echo "--- Installing OpenSSL"
+	set -e
 
 	apk add --no-cache \
 		openssl \
-                openssl-dev \
-                openssl-libs-static
+        openssl-dev \
+        openssl-libs-static
 
+	set +e
+	
 	addFeature --enable-openssl
 
 	echo
 }
 
 compileXml2() {
-        echo "--- Installing libXml2"
+    echo "--- Installing libXml2"
 
-        apk add --no-cache \
+	set -e
+
+    apk add --no-cache \
 		zlib-dev \
 		zlib-static \
 		libxml2-dev
 
-        addFeature --enable-libxml2
+	set +e
 
-        echo
+    addFeature --enable-libxml2
+
+    echo
 }
 
 compileFribidi() {
-        echo "--- Installing Fribidi"
+    echo "--- Installing Fribidi"
 
-        apk add --no-cache \
-                fribidi-dev \
-                fribidi-static
+	set +e
+    apk add --no-cache \
+            fribidi-dev \
+            fribidi-static
+	set +e
+	
+    addFeature --enable-libfribidi
 
-        addFeature --enable-libfribidi
-
-        echo
+    echo
 }
 
 compileFreetype() {
@@ -144,6 +153,7 @@ compileFreetype() {
 
 		echo "--- Installing FreeType"
 
+		set -e
 		apk add --no-cache \
 			zlib-dev \
 			zlib-static \
@@ -161,8 +171,10 @@ compileFreetype() {
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		git clone --depth 1 https://git.savannah.nongnu.org/git/freetype/freetype2.git
+		[ ! -d freetype2 ] && \
+			git clone --depth 1 https://git.savannah.nongnu.org/git/freetype/freetype2.git
 		cd freetype2/
+		set +e
 
 		./autogen.sh
 		./configure \
@@ -183,45 +195,48 @@ compileFreetype() {
 
 	echo
 
-	# Freetype + Harfbuzz seems to break Ffmpeg build (at least on ARM)
-	#if [ -z "$BUILDING_HARFBUZZ" ]; then
-	#	compileHarfbuzz
-	#fi
+	# Freetype + Harfbuzz seems to break Ffmpeg build on Alpine
+	if [ -z "$BUILDING_HARFBUZZ" ]; then
+		compileHarfbuzz
+	fi
 }
 
 compileFontConfig() {
 	hasBeenBuilt fontconfig
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built fontconfig" \
-        || {
+    && echo "--- Skipping already built fontconfig" \
+    || {
 		compileFreetype
 
 		echo "--- Installing fontConfig"
 
-                apk add --no-cache \
-        	        libpng-dev \
-                	libpng-static \
+		set -e
+        apk add --no-cache \
+			libpng-dev \
+			libpng-static \
 			expat-dev \
-			expat-static
+			expat-static \
+			gperf
 
 		DIR=/tmp/fontconfig
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		wget https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.12.1.tar.bz2 \
-			-O fontconfig.tar.bz2
-		tar xjf fontconfig.tar.bz2
-		cd fontconfig*
+		wget https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.gz \
+			-O fontconfig.tar.gz
+		tar -xf fontconfig.tar.gz
+		cd fontconfig-2.13.92
+		set +e
 
-		./configure \
+		PKG_CONFIG_PATH="$PKG_CONFIG_PATH" ./configure \
 			--prefix="$PREFIX" \
 			--enable-static=yes \
 			--enable-shared=no \
-			--disable-docs
+			--disable-docs \
+			--disable-dependency-tracking
 
 		make && make install
-
 	}
 
 	addFeature --enable-fontconfig
@@ -232,9 +247,11 @@ compileFontConfig() {
 compilePixman() {
 	echo "--- Installing Pixman"
 
+	set +e
 	apk add --no-cache \
 		pixman-dev \
 		pixman-static
+	set +e
 
 	echo
 }
@@ -243,18 +260,18 @@ compileCairo() {
 	hasBeenBuilt cairo
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Cairo" \
-        || {
+    && echo "--- Skipping already built Cairo" \
+    || {
 		compilePixman
 		compileFontConfig	# compiles freetype installs xml2 installs zlib
 
 		echo "--- Installing Cairo"
-
+		set -e
 		apk add --no-cache \
 			glib-dev \
 			glib-static \
-        	        libpng-dev \
-                	libpng-static \
+	        libpng-dev \
+        	libpng-static \
 			libx11-dev \
 			libx11-static \
 			libxcb-dev \
@@ -264,50 +281,51 @@ compileCairo() {
 		# TODO: add OpenGL support?
 		# TODO: add directFB support?
 
-                DIR=/tmp/cairo
-                mkdir -p "$DIR"
-                cd "$DIR"
+        DIR=/tmp/cairo
+        mkdir -p "$DIR"
+        cd "$DIR"
 
-                git clone --depth 1 https://github.com/freedesktop/cairo.git
-                cd cairo
+        git clone --depth 1 https://github.com/freedesktop/cairo.git
+        cd cairo
+        set +e
 
-                ./autogen.sh
-                ./configure \
-                        --prefix="$PREFIX" \
-                        --enable-shared=no \
-                        --enable-static=yes
+        ./autogen.sh
+        ./configure \
+            --prefix="$PREFIX" \
+            --enable-shared=no \
+            --enable-static=yes
 
-                make && make install
-        }
+        make && make install
+    }
 
-        echo
+    echo
 }
 
 compileGraphite2() {
 	hasBeenBuilt graphite2
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Graphite2" \
-        || {
-                echo "--- Installing Graphite2"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Graphite2" \
+    || {
+        echo "--- Installing Graphite2"
 
-                DIR=/tmp/graphite2
-                mkdir -p "$DIR"
-                cd "$DIR"
+        DIR=/tmp/graphite2
+        mkdir -p "$DIR"
+        cd "$DIR"
 
-                git clone --depth 1 https://github.com/silnrsi/graphite.git
-                cd graphite
+        git clone --depth 1 https://github.com/silnrsi/graphite.git
+        cd graphite
 
-                mkdir build
-                cd build
+        mkdir build
+        cd build
 
-                cmake \
-                        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-                        -DBUILD_SHARED_LIBS=OFF \
-                        ..
+        cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            ..
 
-                make && make install
-        }
+        make && make install
+    }
 	
 	echo
 }
@@ -317,44 +335,46 @@ compileHarfbuzz () {
 	BUILDING_HARFBUZZ=1
 	hasBeenBuilt harfbuzz
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Harfbuzz" \
-        || {
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Harfbuzz" \
+    || {
 		compileCairo	# compiles fontconfig compiles freetype
-				# installs glib
+						# installs glib
 
 		# Harfbuzz doesn't seem to like statically compiled Graphite2
 		#compileGraphite2
 
-                echo "--- Installing Harfbuzz"
+        echo "--- Installing Harfbuzz"
 
-                apk add --no-cache \
+		set +e
+        apk add --no-cache \
 			icu-dev \
 			icu-static
 
-                DIR=/tmp/harfbuzz
-                mkdir -p "$DIR"
-                cd "$DIR"
+        DIR=/tmp/harfbuzz
+        mkdir -p "$DIR"
+        cd "$DIR"
 
-                git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
-                cd harfbuzz
+        git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
+        cd harfbuzz
+        set +e
 
-                ./autogen.sh
-                ./configure \
-                        --prefix="$PREFIX" \
-                        --enable-shared=no \
-                        --enable-static=yes \
+        ./autogen.sh
+        ./configure \
+            --prefix="$PREFIX" \
+            --enable-shared=no \
+            --enable-static=yes \
 			#--with-graphite2
 
-                make && make install
+        make && make install
 
-        	echo
+    	echo
 
 		# force recompilation of freetype
 		rm "$PREFIX/lib/pkgconfig/freetype2.pc"
 		rm -rf "/tmp/freetype"
 		compileFreetype
-        }
+    }
 }
 
 
@@ -362,8 +382,8 @@ compileAss() {
 	hasBeenBuilt libass
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built libAss" \
-        || {
+    && echo "--- Skipping already built libAss" \
+    || {
 		compileFontConfig # font config also builds freetype
 		compileFribidi
 
@@ -374,8 +394,10 @@ compileAss() {
 		DIR=/tmp/ass
 		mkdir -p "$DIR"
 		cd "$DIR"
+		
 		git clone --depth 1 https://github.com/libass/libass.git
 		cd libass
+		
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
@@ -394,21 +416,22 @@ compileZimg() {
 	hasBeenBuilt zimg
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built zimg" \
-        || {
+    && echo "--- Skipping already built zimg" \
+    || {
 		echo "--- Installing zimg"
-        	DIR=/tmp/zimg
-        	mkdir -p "$DIR"
-        	cd "$DIR"
+		
+    	DIR=/tmp/zimg
+    	mkdir -p "$DIR"
+    	cd "$DIR"
 
-        	git clone --depth 1 https://github.com/sekrit-twc/zimg.git
-        	cd zimg
-        	./autogen.sh
-
-        	./configure \
-                	--prefix="$PREFIX" \
-                	--enable-shared=no \
-                	--enable-static=yes
+    	git clone --depth 1 https://github.com/sekrit-twc/zimg.git
+    	cd zimg
+    	
+    	./autogen.sh
+    	./configure \
+            	--prefix="$PREFIX" \
+            	--enable-shared=no \
+            	--enable-static=yes
 
 		make && make install
 	}
@@ -422,18 +445,17 @@ compileVidStab() {
 	hasBeenBuilt vidstab
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built vidstab" \
-        || {
+    && echo "--- Skipping already built vidstab" \
+    || {
 		echo "--- Installing vid.stab"
+		
 		DIR=/tmp/vidstab
 		mkdir -p "$DIR"
-	        cd "$DIR"
+        cd "$DIR"
 
 		git clone --depth 1 https://github.com/georgmartius/vid.stab.git
-		cd vid.stab
-
-		mkdir build
-		cd build
+		mkdir -p vid.stab/build
+		cd vid.stab/build
 
 		cmake \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -452,18 +474,18 @@ compileWebp() {
 	hasBeenBuilt libwebp
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built libWebp" \
-        || {
+    && echo "--- Skipping already built libWebp" \
+    || {
 		echo "--- Installing webp"
 
 		DIR=/tmp/webp
-        	mkdir -p "$DIR"
-	        cd "$DIR"
+    	mkdir -p "$DIR"
+        cd "$DIR"
 
 		git clone --depth 1 https://github.com/webmproject/libwebp.git
 		cd libwebp
+		
 		./autogen.sh
-
 		./configure \
 			--prefix="$PREFIX" \
 			--enable-shared=no \
@@ -987,39 +1009,43 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	compileOpenSsl
-	compileXml2
-	compileFribidi
+	#compileOpenSsl
+	#compileXml2
+	#compileFribidi
 	compileFreetype
-	compileFontConfig
-	compileZimg
-	compileVidStab
-	compileAss
+	#compileFontConfig
+	#compileZimg
+	#compileVidStab
+	#compileAss
+	:					#NOOP
 }
 
 compileImageLibs() {
-	compileOpenJpeg
-	compileWebp
+	#compileOpenJpeg
+	#compileWebp
+	:					#NOOP
 }
 
 compileAudioCodecs() {
-	compileSoxr
-	compileOpus
-	compileVorbis
-	compileMp3Lame
-	compileFdkAac
-	compileTheora
-	compileSpeex
+	#compileSoxr
+	#compileOpus
+	#compileVorbis
+	#compileMp3Lame
+	#compileFdkAac
+	#compileTheora
+	#compileSpeex
+	:					#NOOP
 }
 
 compileVideoCodecs() {
-	compileXvid
-	compileVpx
-	compileX264
-	compileAom
-	compileKvazaar
-	compileDav1d
-	compileX265
+	#compileXvid
+	#compileVpx
+	#compileX264
+	#compileAom
+	#compileKvazaar
+	#compileDav1d
+	#compileX265
+	:					#NOOP
 }
 
 installFfmpegToolingDependencies
@@ -1033,4 +1059,3 @@ compileFfmpeg
 
 # fingers crossed
 sanityCheck
-
