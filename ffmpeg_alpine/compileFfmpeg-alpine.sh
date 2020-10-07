@@ -351,7 +351,7 @@ compileHarfbuzz () {
         	echo
 
 		# force recompilation of freetype
-		rm "$PREFIX/lib/pkgconfig/freetype.pc"
+		rm "$PREFIX/lib/pkgconfig/freetype2.pc"
 		rm -rf "/tmp/freetype"
 		compileFreetype
         }
