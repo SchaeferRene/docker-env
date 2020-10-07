@@ -1,10 +1,13 @@
-ARG DEBIAN_BASE=debian:bullseye-slim
+ARG DOCKER_ID=reneschaefer
+ARG ARCH=armv7
+ARG IMAGE_TAG=$DOCKER_ID/alpine-base-$ARCH
+ARG IMAGE_VERSION=latest
 
-FROM ${DEBIAN_BASE} AS builder
+FROM ${IMAGE_TAG}:${IMAGE_VERSION} AS builder
 
 WORKDIR /opt/ffmpeg
 
-COPY compileFfmpeg.sh .
+COPY compileFfmpeg-alpine.sh .
 
 # build ffmpeg
 RUN ./compileFfmpeg-alpine.sh \
@@ -14,7 +17,7 @@ RUN ./compileFfmpeg-alpine.sh \
 	&& test $(ldd /opt/ffmpeg/bin/ffprobe | wc -l) -eq 1
 
 # copy build artifacts
-FROM ${DEBIAN_BASE}
+FROM ${IMAGE_TAG}:${IMAGE_VERSION}
 COPY --from=builder /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe /usr/local/bin/
 COPY --from=builder /etc/ssl/cert.pem /etc/ssl/cert.pem
 

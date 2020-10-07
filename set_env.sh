@@ -21,7 +21,8 @@ fi
 
 # image names to deploy and push
 export BASE_IMAGE="alpine-base-$ARCH"
-export FFMPEG_IMAGE="ffmpeg-debian-$ARCH"
+export FFMPEG_ALPINE_IMAGE="ffmpeg-alpine-$ARCH"
+export FFMPEG_DEBIAN_IMAGE="ffmpeg-debian-$ARCH"
 export GITEA_IMAGE="gitea-alpine-$ARCH"
 export MPD_IMAGE="mpd-alpine-$ARCH"
 export NGINX_IMAGE="nginx-alpine-$ARCH"
@@ -37,7 +38,7 @@ export DOCKER_BUILDKIT=1
 
 # prepare build vars
 ## features lists all features that CAN be built
-FEATURES=(ydl ffmpeg privoxy)
+FEATURES=(ydl ffmpeg_alpine ffmpeg_debian privoxy)
 
 ## common - current user/group and path
 export GUID=$(id -g)

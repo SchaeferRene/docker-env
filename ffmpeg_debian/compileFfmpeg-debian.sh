@@ -327,11 +327,11 @@ compileHarfbuzz () {
     [ $RESULT -eq 0 ] \
     && echo "--- Skipping already built Harfbuzz" \
     || {
-	compileCairo	# compiles fontconfig compiles freetype
-			# installs glib
+		compileCairo	# compiles fontconfig compiles freetype
+						# installs glib
 
-	# Harfbuzz doesn't seem to like statically compiled Graphite2
-	#compileGraphite2
+		# Harfbuzz doesn't seem to like statically compiled Graphite2
+		#compileGraphite2
 
         echo "--- Installing Harfbuzz"
 
@@ -348,12 +348,12 @@ compileHarfbuzz () {
 
         ./autogen.sh
         ./configure \
-                --prefix="$PREFIX" \
-                --enable-shared=no \
-                --enable-static=yes \
-		#--with-graphite2
+            --prefix="$PREFIX" \
+            --enable-shared=no \
+            --enable-static=yes \
+			#--with-graphite2
 
-            make && make install
+        make && make install
 
     	echo
 
@@ -998,10 +998,10 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	compileOpenSsl
+	#compileOpenSsl
 	#compileXml2
 	#compileFribidi
-	#compileFreetype
+	compileFreetype
 	#compileFontConfig
 	#compileZimg
 	#compileVidStab
@@ -1034,7 +1034,7 @@ compileVideoCodecs() {
 }
 
 installFfmpegToolingDependencies
-#compileSupportingLibs
+compileSupportingLibs
 #compileImageLibs
 #compileAudioCodecs
 #compileVideoCodecs

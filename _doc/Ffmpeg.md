@@ -8,33 +8,32 @@ It's not complete yet, but at least it has reached a usable state. The script to
 The script compiles a static version of ffmpeg with hardened toolchain, containing the following features:
 
 - done:
-    - openssl
-    - xml2
-    - fribidi
-    - freetype
-    - fontconfig
-    - zimg
-    - vidstab
+    - aom
     - ass
-    - openjpeg
-    - webp
-    - soxr
-    - opus
-    - vorbis
-    - mp3lame
+    - dav1d
+    - fontconfig
+    - freetype
+    - fribidi
+    - kvazaar
     - libfdk-aac
-    - theora
-    - wavpack
+    - mp3lame
+    - openjpeg
+    - openssl
+    - opus
+    - soxr
     - speex
-    - xvid
+    - theora
+    - vidstab
+    - vorbis
     - vp8
     - vp9
+    - webp
     - x264
-    - aom
-    - kvazaar
-    - dav1d
-- wip:
     - x265
+    - xml2
+    - xvid
+    - zimg
+- wip:
     - v4l
 - todo:
     - opencv

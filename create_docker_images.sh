@@ -134,7 +134,7 @@ while [[ $# -gt 0 ]]; do
         IS_RUN_BASE=0
         ;;
 		--ffmpeg)
-		BASE_IMAGES+=("ffmpeg")
+		BASE_IMAGES+=("ffmpeg_alpine")
 		;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")

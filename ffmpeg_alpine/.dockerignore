@@ -1,3 +1,2 @@
 .dockerignore
 Dockerfile
-compileFfmpeg-debian.sh
