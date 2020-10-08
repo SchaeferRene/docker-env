@@ -29,7 +29,7 @@ The script compiles a static version of the latest snapshot release ffmpeg with 
     - openjpeg								@latest from git
     - openssl								@latest from repo
     - opus									@latest from repo
-    - soxr									@latest from repo
+    - soxr									@latest from tar / repo
     - speex									@latest from git
     - theora									@latest from repo
     - vidstab								@latest from git

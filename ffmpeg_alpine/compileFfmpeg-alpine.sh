@@ -10,12 +10,21 @@ export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -
 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
 
+FFMPEG_FEATURES=""
+FFMPEG_EXTRA_LIBS=""
+
 mkdir -p "$PREFIX"
 
 addFeature() {
-	[ $(echo "$FFMPEG_FEATURES" | grep -q "$1"; echo $?) -eq 0 ] \
+	[ $(echo "$FFMPEG_FEATURES" | grep -q -- "$1"; echo $?) -eq 0 ] \
 		|| FFMPEG_FEATURES="$FFMPEG_FEATURES $1"
 }
+
+addExtraLib() {
+	[ $(echo "$FFMPEG_EXTRA_LIBS" | grep -q -- "$1"; echo $?) -eq 0 ] \
+		|| FFMPEG_EXTRA_LIBS="$FFMPEG_EXTRA_LIBS $1"
+}
+
 
 installFfmpegToolingDependencies() {
 	echo "--- Installing Tooling Dependencies"
@@ -49,6 +58,7 @@ installFfmpegToolingDependencies() {
 }
 
 dirtyHackForBrotli() {
+	echo
 	echo "--- Applying hack for brotli"
 
 	if [[ ! -e /usr/lib/libbrotlicommon.a -a -e /usr/lib/libbrotlicommon-static.a ]]; then
@@ -62,9 +72,9 @@ dirtyHackForBrotli() {
 sanityCheck() {
 	RC=$?
 	echo
-	echo "--- Compilation status: " $RC
 
 	if [[ $RC -eq 0 ]]; then
+		echo "--- Compilation succeeded"
 		for PRG in ffmpeg ffprobe ffplay
 		do
 			PRG="$PREFIX/bin/$PRG"
@@ -75,6 +85,9 @@ sanityCheck() {
 				echo
 			fi
 		done
+	else
+		echo "... ... build failed with exit status"  $RC
+		[ -f ffbuild/config.log ] && tail -10 ffbuild/config.log
 	fi
 }
 
@@ -998,6 +1011,7 @@ compileFfmpeg() {
 		--pkg-config=pkg-config \
 		--pkg-config-flags=--static \
 		--toolchain=hardened \
+		--extra-libs="-lz $FFMPEG_EXTRA_LIBS" \
 		$FFMPEG_OPTIONS
 		#--extra-libs="-lpthread -lm -lz" \
 
@@ -1012,7 +1026,7 @@ compileSupportingLibs() {
 	#compileOpenSsl
 	#compileXml2
 	#compileFribidi
-	compileFreetype
+	#compileFreetype
 	#compileFontConfig
 	#compileZimg
 	#compileVidStab
@@ -1033,7 +1047,7 @@ compileAudioCodecs() {
 	#compileMp3Lame
 	#compileFdkAac
 	#compileTheora
-	#compileSpeex
+	compileSpeex
 	:					#NOOP
 }
 
@@ -1047,6 +1061,8 @@ compileVideoCodecs() {
 	#compileX265
 	:					#NOOP
 }
+
+### Leave the rest as is ####################
 
 installFfmpegToolingDependencies
 compileSupportingLibs

@@ -10,11 +10,19 @@ export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -
 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
 
+FFMPEG_FEATURES=""
+FFMPEG_EXTRA_LIBS=""
+
 mkdir -p "$PREFIX"
 
 addFeature() {
 	[ $(echo "$FFMPEG_FEATURES" | grep -q -- "$1"; echo $?) -eq 0 ] \
 		|| FFMPEG_FEATURES="$FFMPEG_FEATURES $1"
+}
+
+addExtraLib() {
+	[ $(echo "$FFMPEG_EXTRA_LIBS" | grep -q -- "$1"; echo $?) -eq 0 ] \
+		|| FFMPEG_EXTRA_LIBS="$FFMPEG_EXTRA_LIBS $1"
 }
 
 installFfmpegToolingDependencies() {
@@ -54,9 +62,9 @@ installFfmpegToolingDependencies() {
 sanityCheck() {
 	RC=$?
 	echo
-	echo "--- Compilation status: " $RC
 
 	if [ $RC -eq 0 ]; then
+		echo "--- Compilation succeeded"
 		for PRG in ffmpeg ffprobe ffplay
 		do
 			PRG="$PREFIX/bin/$PRG"
@@ -67,6 +75,9 @@ sanityCheck() {
 				echo
 			fi
 		done
+	else
+		echo "... ... build failed with exit status"  $RC
+		[ -f ffbuild/config.log ] && tail -10 ffbuild/config.log
 	fi
 }
 
@@ -342,6 +353,7 @@ compileHarfbuzz () {
 						# installs glib
 
 		# Harfbuzz doesn't seem to like statically compiled Graphite2
+		# TODO: current build does not seem to use Graphite2
 		compileGraphite2
 
         echo "--- Installing Harfbuzz"
@@ -388,11 +400,13 @@ compileAss() {
 
 		echo "--- Installing libAss"
 		set -e
-		apk add --no-cache nasm
+		apt-get install -y \
+			nasm
 
 		DIR=/tmp/ass
 		mkdir -p "$DIR"
 		cd "$DIR"
+		
 		git clone --depth 1 https://github.com/libass/libass.git
 		cd libass
 		set +e
@@ -438,6 +452,7 @@ compileZimg() {
 	}
 
 	addFeature --enable-libzimg
+	addExtraLib -lm
 
 	echo
 }
@@ -534,17 +549,50 @@ compileOpenJpeg() {
 }
 
 compileSoxr() {
-    echo "--- Installing Soxr"
-	
-	set -e
-    apk add --no-cache \
-		soxr-dev \
-		soxr-static
-	set +e
-	
-    addFeature --enable-libsoxr
+	hasBeenBuilt soxr
 
-    echo
+	[ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Soxr" \
+    || {
+		echo "--- Installing Soxr"
+
+		DIR=/tmp/soxr
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		set -e
+		wget https://sourceforge.net/projects/soxr/files/latest/download -O soxr.tar.xz
+		tar xf soxr.tar.xz
+		rm soxr.tar.xz
+		cd $(ls)
+		set +e
+
+		mkdir build
+		cd build/
+		cmake -Wno-dev \
+			-DCMAKE_BUILD_TYPE="Release" \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DBUILD_SHARED_LIBS=OFF \
+			..
+		
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes
+
+		make
+		set -e
+		ctest || (echo "FAILURE details in Testing/Temporary/LastTest.log:"; cat Testing/Temporary/LastTest.log; false)
+		set +e 
+		
+		make install
+	}
+
+    addFeature --enable-libsoxr
+    addExtraLib -lsoxr
+    addExtraLib -lm
+
+	echo
 }
 
 compileMp3Lame() {
@@ -615,7 +663,8 @@ compileOgg() {
 		echo "--- Installing ogg"
 		# standard version is enough
 		set -e
-		apk add --no-cache libogg-dev
+		apt-get install -y \
+			libogg-dev
 		set +e
 	#	DIR=/tmp/ogg
 	#	mkdir -p "$DIR"
@@ -641,7 +690,8 @@ compileVorbis() {
 		echo "--- Installing vorbis"
 		# standard versionis enough
 		set -e
-		apk add --no-cache libvorbis-dev
+		apt-get install -y \
+			libvorbis-dev
 		set +e
 	#	compileOgg
         #	DIR=/tmp/vorbis
@@ -670,7 +720,8 @@ compileOpus() {
 		echo "--- Installing opus"
 		# default opus is enough
 		set -e
-		apk add --no-cache libopusenc-dev
+		apt-get install -y \
+			libopusenc-dev
 		set +e
         #	DIR=/tmp/opus
         #	mkdir -p "$DIR"
@@ -702,7 +753,8 @@ compileTheora() {
 
 		# standard theora is enough
 		set -e
-		apk add --no-cache libtheora-dev libtheora-static
+		apt-get install -y \
+			libtheora-dev
 		set +e
         #	DIR=/tmp/theora
         #	mkdir -p "$DIR"
@@ -804,7 +856,8 @@ compileVpx() {
 		cd "$DIR"
 
 		set -e
-		apk add --no-cache diffutils
+		apt-get install -y \
+			diffutils
 
 		git clone --depth 1 https://github.com/webmproject/libvpx.git
 		cd libvpx
@@ -977,7 +1030,9 @@ compileDav1d() {
         echo "--- Installing dav1d"
 
 		set -e
-		apk add --no-cache meson ninja
+		apt-get install -y \
+			meson \
+			ninja
 
 		DIR=/tmp/dav1d
 		mkdir -p "$DIR"
@@ -1037,6 +1092,7 @@ compileFfmpeg() {
 		--pkg-config=pkg-config \
 		--pkg-config-flags=--static \
 		--toolchain=hardened \
+		--extra-libs="-lz $FFMPEG_EXTRA_LIBS" \
 		$FFMPEG_OPTIONS
 		#--extra-libs="-lpthread -lm -lz" \
 
@@ -1051,7 +1107,7 @@ compileSupportingLibs() {
 	#compileOpenSsl
 	#compileXml2
 	#compileFribidi
-	compileFreetype
+	#compileFreetype
 	#compileFontConfig
 	#compileZimg
 	#compileVidStab
@@ -1066,7 +1122,7 @@ compileImageLibs() {
 }
 
 compileAudioCodecs() {
-	#compileSoxr
+	compileSoxr
 	#compileOpus
 	#compileVorbis
 	#compileMp3Lame
@@ -1086,6 +1142,8 @@ compileVideoCodecs() {
 	#compileX265
 	:					#NOOP
 }
+
+### Leave the rest as is ####################
 
 installFfmpegToolingDependencies
 compileSupportingLibs
