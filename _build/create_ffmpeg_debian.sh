@@ -1,6 +1,6 @@
 #! /bin/bash
 
-echo "... ... building ffmpeg_debian"
+echo "... ... ... building ffmpeg_debian"
 
 docker build \
 	--build-arg DEBIAN_BASE=$DEBIAN_BASE \

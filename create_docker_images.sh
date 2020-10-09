@@ -45,20 +45,20 @@ function build_image {
 	
 	if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE$IS_BASE_FEATURE" ]; then
 		if [ -f $COMPOSE_FILE ]; then
-			echo "... ... composing $FEATURE"
+			echo -e "\n... ... composing $FEATURE"
 			docker-compose -f $COMPOSE_FILE build
 	
 			tag_image "$FEATURE"
 			
 			DEPLOY_IMAGES+=("$COMPOSE_FILE")
 		elif [ -x "$SCRIPT_FILE" ]; then
-			echo "... ... triggering $SCRIPT_FILE"
+			echo -e "\n... ... triggering $SCRIPT_FILE"
 			
 			source "$SCRIPT_FILE"
 			
 			tag_image "$FEATURE"
 		elif [ -r "$DOCKER_FILE" ]; then
-			echo "... ... building $FEATURE"
+			echo -e "\n... ... building $FEATURE"
 			
 			docker build \
 				--pull \

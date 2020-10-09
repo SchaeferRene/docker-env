@@ -1,6 +1,6 @@
 #! /bin/bash
 
-echo "... ... building ffmpeg_alpine"
+echo "... ... ... building ffmpeg_alpine"
 
 docker build \
 	--build-arg ARCH=$ARCH \
