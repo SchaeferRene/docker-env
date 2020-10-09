@@ -33,6 +33,17 @@ function usage {
 	exit 0
 }
 
+buildBaseImage() {
+	[ $(echo "${BASE_IMAGES[@]}" | grep -q -- "$1"; echo $?) -eq 0 ] \
+		|| BASE_IMAGES+=($1)
+}
+
+buildImage() {
+	[ $(echo "${BUILD_IMAGES[@]}" | grep -q -- "$1"; echo $?) -eq 0 ] \
+		|| BUILD_IMAGES+=($1)
+}
+
+
 function build_image {
 	FEATURE=$1
 	
@@ -109,7 +120,7 @@ IS_PUSH_IMAGES=1
 IS_FOLLOW_LOGS=1
 IS_RUN_BASE=1
 # holds images that are considered base images
-BASE_IMAGES=(base)
+BASE_IMAGES=()
 # holds images that WILL be BUILT
 BUILD_IMAGES=()
 # holds images that WILL be DEPLOYED
@@ -134,22 +145,28 @@ while [[ $# -gt 0 ]]; do
         IS_RUN_BASE=0
         ;;
 		--ffmpeg)
-		BASE_IMAGES+=("ffmpeg_alpine" "ffmpeg_debian")
+		buildBaseImage base
+		buildBaseImage ffmpeg_alpine
+		buildBaseImage ffmpeg_debian
 		;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")
 #        ;;
         --mpd)
-        BUILD_IMAGES+=("mpd")
+		buildBaseImage base
+		buildImage mpd
         ;;
         --nginx)
-        BUILD_IMAGES+=("nginx")
+		buildBaseImage base
+		buildImage nginx
         ;;
         --privoxy)
-        BUILD_IMAGES+=("privoxy")
+		buildBaseImage base
+		buildImage privoxy
         ;;
         --ydl|--youtube-dl)
-        BUILD_IMAGES+=("ydl")
+		buildBaseImage base
+		buildImage ydl
         ;;
         *)
         echo "... ... ... Unknown option '$key'" >&2
@@ -186,6 +203,7 @@ for f in ${BUILD_IMAGES[@]}; do echo "$f"; done | sort | uniq | while read FEATU
 		exit 2
 	fi
 done
+
 echo "... ... ... put ${BASE_IMAGES[@]} ${BUILD_IMAGES[@]} on agenda"
 
 # check required programs
