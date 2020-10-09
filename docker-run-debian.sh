@@ -1,6 +1,4 @@
 #! /bin/bash
-source ./set_env.sh
-
 docker run \
 	--rm \
 	-it \
@@ -8,4 +6,3 @@ docker run \
 	--device=/dev/dri:/dev/dri \
 	debian:bullseye-slim \
 	/bin/bash
-

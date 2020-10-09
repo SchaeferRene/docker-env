@@ -917,13 +917,84 @@ compileDav1d() {
 	echo
 }
 
-compileFfmpeg() {
-	# add position independent code per default
-	addFeature --enable-pic
+compileXavs2() {
+	hasBeenBuilt xavs2
 
-	FFMPEG_OPTIONS="--disable-shared --enable-static "
-	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc "
-	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3 "
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built xavs2" \
+    || {
+        echo "--- Installing xavs2"
+
+		apt-get install -y \
+			nasm \
+			unzip
+
+		DIR=/tmp/xavs2
+		mkdir -p "$DIR"
+    	cd "$DIR"
+
+		wget https://github.com/pkuvcl/xavs2/archive/master.zip -O xavs2.zip
+		unzip xavs2.zip
+		cd xavs2-master/build/linux/
+
+		./configure \
+			--prefix "$PREFIX" \
+			--enable-pic \
+			--enable-static \
+			--disable-cli
+
+		make && make install
+	}
+
+	addFeature --enable-libxavs2
+
+	echo
+}
+
+compileDavs2() {
+	hasBeenBuilt davs2
+
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built davs2" \
+    || {
+        echo "--- Installing davs2"
+
+		apt-get install -y \
+			nasm \
+			unzip
+
+		DIR=/tmp/davs2
+		mkdir -p "$DIR"
+    	cd "$DIR"
+
+		wget https://github.com/pkuvcl/davs2/archive/master.zip -O davs2.zip
+		unzip davs2.zip
+		cd davs2-master/build/linux/
+
+		./configure \
+			--prefix "$PREFIX" \
+			--enable-pic \
+			--enable-static \
+			--disable-cli
+
+		make && make install
+	}
+
+	addFeature --enable-libdavs2
+
+	echo
+}
+
+compileFfmpeg() {
+	# add some default features
+	addFeature --enable-libxcb
+	addFeature --enable-libxcb-shm
+	addFeature --enable-libxcb-xfixes
+	addFeature --enable-libxcb-shape
+	
+	FFMPEG_OPTIONS="--disable-shared --enable-static --enable-pic"
+	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc"
+	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS $FFMPEG_FEATURES"
 
 	echo
@@ -999,6 +1070,8 @@ compileVideoCodecs() {
 	compileKvazaar
 	compileDav1d
 	compileX265
+	compileXavs2
+	compileDavs2
 	:					#NOOP
 }
 

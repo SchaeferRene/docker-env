@@ -63,7 +63,11 @@ Run the main script `create_docker_images.sh` as a docker enabled user in order 
 * `--ydl` , `--youtube-dl` - build youtube-dl
 
 ### `set_env.sh`
-Source the script `set_env.sh` to have the environment variables set, so you can run docker-compose commands on your own.^
+Source the script `set_env.sh` to have the environment variables set, so you can run docker-compose commands on your own.
+
+<b>Note:</b> there are service specific set_env scripts in _set_env folder, which would be needed
+for manually running docker compose scripts as well.
+
 ### `docker-run-*.sh`
 script to launch a base image for doing some evaluations.
 

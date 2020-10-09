@@ -12,9 +12,9 @@ COPY compileFfmpeg-debian.sh .
 # build ffmpeg
 RUN ./compileFfmpeg-debian.sh \
 # make sure binaries have no additional dependencies
-	&& set -xe \
-	&& test $(ldd /opt/ffmpeg/bin/ffmpeg | wc -l) -eq 1 \
-	&& test $(ldd /opt/ffmpeg/bin/ffprobe | wc -l) -eq 1
+#	&& set -xe \
+	&& test $(ldd /opt/ffmpeg/bin/ffmpeg | wc -l) -eq 0 \
+	&& test $(ldd /opt/ffmpeg/bin/ffprobe | wc -l) -eq 0
 
 # copy build artifacts
 FROM ${DEBIAN_BASE}

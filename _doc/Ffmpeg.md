@@ -12,6 +12,7 @@ The script compiles a static version of the latest snapshot release ffmpeg with 
         - with _fontconfig_
         - with _fribidi_
     - dav1d									@latest from git
+    - davs									@latest from zip
     - fontconfig							<red>release 2.13.92</red>
     - with _freetype_
     - freetype								@latest from git
@@ -29,6 +30,7 @@ The script compiles a static version of the latest snapshot release ffmpeg with 
     - openjpeg								@latest from git
     - openssl								@latest from repo
     - opus									@latest from repo
+    - pic
     - soxr									@latest from tar / repo
     - speex									@latest from git
     - theora									@latest from repo
@@ -39,7 +41,12 @@ The script compiles a static version of the latest snapshot release ffmpeg with 
     - webp									@latest from git
     - x264									@latest from git
     - x265									@latest from git
+    - xcb
+    - xcb-shm
+    - xcb-xfixes
+    - xcb-shape
     - xml2									@latest from tar / repo
+    - xavs									@latest from zip
     - xvid									<red>release 1.3.7</red>
     - zimg									@latest from git
 
@@ -57,4 +64,4 @@ These are the main resources that helped me most in creating this script:
 - [Linux from Scratch](http://www.linuxfromscratch.org/blfs/view/svn/index.html)
 - [JRottenberg's Alpine Ffmpeg Docker Image](https://github.com/jrottenberg/ffmpeg/blob/master/docker-images/4.3/alpine38/Dockerfile)
 - [MWader's statically compiled Ffmpeg Docker image](https://hub.docker.com/r/mwader/static-ffmpeg/dockerfile)
-
+- [pkuvcl/buildFFmpegAVS2](https://github.com/pkuvcl/buildFFmpegAVS2/blob/master/build_linux.sh)
