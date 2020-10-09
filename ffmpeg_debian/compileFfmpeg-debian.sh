@@ -26,14 +26,13 @@ addExtraLib() {
 }
 
 installFfmpegToolingDependencies() {
-	echo "--- Refreshing system"
-	set -e
+	echo -e "\n--- Refreshing system"
+	
 	apt-get update -q
 	apt-get full-upgrade -y
 	
 	# below dependencies are required to build core ffmpeg according to generic compilation guide
-	echo
-	echo "--- Installing Tooling Dependencies"
+	echo -e "\n--- Installing Tooling Dependencies"
 	apt-get -y install \
 		build-essential \
 		autoconf \
@@ -47,31 +46,27 @@ installFfmpegToolingDependencies() {
 		texinfo \
 		yasm
   
-	echo
-
-	echo "--- Installing ffmpeg build Dependencies"
+	echo -e "\n--- Installing ffmpeg build Dependencies"
 	apt-get -y install \
 		libva-dev libvdpau-dev \
 		libsdl2-dev \
 		libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev
 
-	set +e
 	echo
 }
 
 sanityCheck() {
 	RC=$?
-	echo
 
 	if [ $RC -eq 0 ]; then
-		echo "--- Compilation succeeded"
+		echo -e "\n--- Compilation succeeded"
 		for PRG in ffmpeg ffprobe ffplay
 		do
 			PRG="$PREFIX/bin/$PRG"
 			if [ -f "$PRG" ]; then
 				echo
 				echo "${PRG} -version" && ${PRG} -version
-				echo -n "${PRG} dependencies:" && echo $(ldd "$PRG" | wc -l)
+				echo -e "${PRG} dependencies:" && echo $(ldd "$PRG" | wc -l)
 				echo
 			fi
 		done
@@ -82,7 +77,7 @@ sanityCheck() {
 }
 
 hasBeenBuilt() {
-	echo "--- Checking $1 in $OWN_PKG_CONFIG_PATH"
+	echo -e "\n--- Checking $1 in $OWN_PKG_CONFIG_PATH"
 	
 	if [ -z "$1" ]; then
 		PCP=$PKG_CONFIG_PATH
@@ -95,13 +90,10 @@ hasBeenBuilt() {
 
 compileOpenSsl() {
 	echo "--- Installing OpenSSL"
-	set -e
-	
+
 	apt-get install -y \
 		libssl-dev
 
-	set +e
-	
 	addFeature --enable-openssl
 
 	echo
@@ -114,8 +106,7 @@ compileXml2() {
     && echo "--- Skipping already built libXml2" \
     || {
 		echo "--- Installing libXml2"
-		
-		set -e
+
 	    apt-get install -y \
 	    	zlib1g-dev \
 			lzma-dev
@@ -126,8 +117,7 @@ compileXml2() {
 		
 		wget https://gitlab.gnome.org/GNOME/libxml2/-/archive/master/libxml2-master.tar.gz -O libxml2-master.tar.gz
 		tar -xf libxml2-master.tar.gz
-		set +e
-		
+
 		cd libxml2-master
 		./autogen.sh
 		./configure \
@@ -147,10 +137,8 @@ compileXml2() {
 compileFribidi() {
     echo "--- Installing Fribidi"
 
-	set -e
     apt-get install -y \
         libfribidi-dev
-	set +e
 
     addFeature --enable-libfribidi
 
@@ -173,7 +161,6 @@ compileFreetype() {
 
 		echo "--- Installing FreeType"
 
-		set -e
 		apt-get install -y \
 			zlib1g-dev \
 			lzma-dev \
@@ -185,10 +172,9 @@ compileFreetype() {
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		[ ! -d freetype2 ] && \
-			git clone --depth 1 https://git.savannah.nongnu.org/git/freetype/freetype2.git
+		[ -d freetype2 ] && rm -rf freetype2
+		git clone --depth 1 https://git.savannah.nongnu.org/git/freetype/freetype2.git
 		cd freetype2/
-		set +e
 
 		./autogen.sh
 		PKG_CONFIG_PATH="$PKG_CONFIG_PATH" ./configure \
@@ -225,7 +211,6 @@ compileFontConfig() {
 
 		echo "--- Installing fontConfig"
 
-		set -e
         apt-get install -y \
 	        libpng-dev \
 			libexpat-dev \
@@ -239,7 +224,6 @@ compileFontConfig() {
 			-O fontconfig.tar.gz
 		tar -xf fontconfig.tar.gz
 		cd fontconfig-2.13.92
-		set +e
 
 		PKG_CONFIG_PATH="$PKG_CONFIG_PATH" ./configure \
 			--prefix="$PREFIX" \
@@ -260,11 +244,9 @@ compileFontConfig() {
 compilePixman() {
 	echo "--- Installing Pixman"
 
-	set -e
 	apt-get install -y \
 		libpixman-1-dev
-	set +e
-	
+
 	echo
 }
 
@@ -278,7 +260,7 @@ compileCairo() {
 		compileFontConfig	# compiles freetype installs xml2 installs zlib
 
 		echo "--- Installing Cairo"
-		set -e
+		
 		apt-get install -y \
 			libglib2.0-dev \
 	        libpng-dev \
@@ -297,8 +279,7 @@ compileCairo() {
 
         git clone --depth 1 https://github.com/freedesktop/cairo.git
         cd cairo
-		set +e
-		
+
         ./autogen.sh
         ./configure \
             --prefix="$PREFIX" \
@@ -322,14 +303,12 @@ compileGraphite2() {
 	    DIR=/tmp/graphite2
 	    mkdir -p "$DIR"
 	    cd "$DIR"
-	
-		set -e
+
 	    git clone --depth 1 https://github.com/silnrsi/graphite.git
 	
 	    mkdir -p graphite/build
 	    cd graphite/build
-	    set +e
-	
+
 	    cmake \
 	        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
 	        -DBUILD_SHARED_LIBS=OFF \
@@ -340,7 +319,6 @@ compileGraphite2() {
 	
 	echo
 }
-
 
 compileHarfbuzz () {
 	BUILDING_HARFBUZZ=1
@@ -358,7 +336,6 @@ compileHarfbuzz () {
 
         echo "--- Installing Harfbuzz"
 
-		set -e
         apt-get install -y \
 			libicu-dev
 
@@ -368,7 +345,6 @@ compileHarfbuzz () {
 
         git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
         cd harfbuzz
-        set +e
 
         ./autogen.sh
         ./configure \
@@ -388,7 +364,6 @@ compileHarfbuzz () {
     }
 }
 
-
 compileAss() {
 	hasBeenBuilt libass
 
@@ -399,7 +374,7 @@ compileAss() {
 		compileFribidi
 
 		echo "--- Installing libAss"
-		set -e
+		
 		apt-get install -y \
 			nasm
 
@@ -409,8 +384,7 @@ compileAss() {
 		
 		git clone --depth 1 https://github.com/libass/libass.git
 		cd libass
-		set +e
-		
+
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
@@ -437,11 +411,9 @@ compileZimg() {
     	mkdir -p "$DIR"
     	cd "$DIR"
 
-		set -e
     	git clone --depth 1 https://github.com/sekrit-twc/zimg.git
     	cd zimg
-    	set +e
-    	
+
     	./autogen.sh
     	./configure \
             	--prefix="$PREFIX" \
@@ -469,11 +441,9 @@ compileVidStab() {
 		mkdir -p "$DIR"
         cd "$DIR"
 
-		set -e
 		git clone --depth 1 https://github.com/georgmartius/vid.stab.git
 		mkdir -p vid.stab/build
 		cd vid.stab/build
-		set +e
 
 		cmake \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -500,11 +470,9 @@ compileWebp() {
     	mkdir -p "$DIR"
         cd "$DIR"
 
-		set -e
 		git clone --depth 1 https://github.com/webmproject/libwebp.git
 		cd libwebp
-		set +e
-		
+
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
@@ -531,10 +499,8 @@ compileOpenJpeg() {
 		mkdir -p "$DIR"
     	cd "$DIR"
 
-		set -e
 		git clone --depth 1 https://github.com/uclouvain/openjpeg.git
 		cd openjpeg
-		set +e
 
 		cmake -G "Unix Makefiles" \
 			-DBUILD_SHARED_LIBS=OFF \
@@ -560,12 +526,10 @@ compileSoxr() {
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		set -e
 		wget https://sourceforge.net/projects/soxr/files/latest/download -O soxr.tar.xz
 		tar xf soxr.tar.xz
 		rm soxr.tar.xz
 		cd $(ls)
-		set +e
 
 		mkdir build
 		cd build/
@@ -581,10 +545,9 @@ compileSoxr() {
 			--enable-static=yes
 
 		make
-		set -e
-		ctest || (echo "FAILURE details in Testing/Temporary/LastTest.log:"; cat Testing/Temporary/LastTest.log; false)
-		set +e 
 		
+		ctest || (echo "FAILURE details in Testing/Temporary/LastTest.log:"; cat Testing/Temporary/LastTest.log; false)
+
 		make install
 	}
 
@@ -605,11 +568,10 @@ compileMp3Lame() {
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		set -e
 		wget https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download -O lame.tar.gz
 		tar xzf lame.tar.gz
-		cd lame*
-		set +e
+		rm lame.tar.gz
+		cd $(ls)
 
 		./configure \
 			--prefix="$PREFIX" \
@@ -636,11 +598,9 @@ compileFdkAac() {
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		set -e
 		git clone --depth 1 https://github.com/mstorsjo/fdk-aac
 		cd fdk-aac
-		set +e
-		
+
 		autoreconf -fiv
 		./configure \
 			--prefix="$PREFIX" \
@@ -656,56 +616,19 @@ compileFdkAac() {
 }
 
 compileOgg() {
-	#hasBeenBuilt ogg
-	#[ $RESULT -eq 0 ] \
-        #&& echo "--- Skipping already built ogg" \
-        #|| {
-		echo "--- Installing ogg"
-		# standard version is enough
-		set -e
-		apt-get install -y \
-			libogg-dev
-		set +e
-	#	DIR=/tmp/ogg
-	#	mkdir -p "$DIR"
-	#	cd "$DIR"
-	#	git clone --depth 1 https://github.com/xiph/ogg.git
-	#	cd ogg
-	#	./autogen.sh
-	#	./configure \
-	#               --prefix="$PREFIX" \
-        #	      	--enable-shared=no \
-        #	        --enable-static=yes
-	#	make && make install
-	#}
+	echo "--- Installing ogg"
+	
+	apt-get install -y \
+		libogg-dev
 
 	echo
 }
 
 compileVorbis() {
-	#hasBeenBuilt vorbis
-	#[ $RESULT -eq 0 ] \
-        #&& echo "--- Skipping already built vorbis" \
-        #|| {
-		echo "--- Installing vorbis"
-		# standard versionis enough
-		set -e
-		apt-get install -y \
-			libvorbis-dev
-		set +e
-	#	compileOgg
-        #	DIR=/tmp/vorbis
-        #	mkdir -p "$DIR"
-	#	cd "$DIR"
-        #	git clone --depth 1 https://github.com/xiph/vorbis.git
-       	#	cd vorbis
-        #	./autogen.sh
-	#       ./configure \
-        #        	--prefix="$PREFIX" \
-        #	        --enable-shared=no \
-	#               --enable-static=yes
-	#        make && make install
-	#}
+	echo "--- Installing vorbis"
+	
+	apt-get install -y \
+		libvorbis-dev
 
 	addFeature --enable-libvorbis
 
@@ -713,30 +636,10 @@ compileVorbis() {
 }
 
 compileOpus() {
-	#hasBeenBuilt opus
-	#[ $RESULT -eq 0 ] \
-        #&& echo "-- Skipping already built opus" \
-        #|| {
-		echo "--- Installing opus"
-		# default opus is enough
-		set -e
-		apt-get install -y \
-			libopusenc-dev
-		set +e
-        #	DIR=/tmp/opus
-        #	mkdir -p "$DIR"
-	#	cd "$DIR"
-        #	git clone --depth 1 https://github.com/xiph/opus.git
-        #	cd opus
-        #	./autogen.sh
-        #	./configure \
-        #	        --prefix="$PREFIX" \
-	#               --enable-shared=no \
-        #        	--enable-static=yes \
-	#		--disable-doc \
-	#		--disable-extra-programs
-	#       make && make install
-	#}
+	echo "--- Installing opus"
+	
+	apt-get install -y \
+		libopus-dev
 
 	addFeature --enable-libopus
 
@@ -744,38 +647,11 @@ compileOpus() {
 }
 
 compileTheora() {
-	#hasBeenBuilt theora
-	#[ $RESULT -eq 0 ] \
-        #&& echo "--- Skipping already built theora" \
-        #|| {
-	#	compileOgg
-		echo "--- Installing Theora"
+	echo
+	echo "--- Installing Theora"
 
-		# standard theora is enough
-		set -e
-		apt-get install -y \
-			libtheora-dev
-		set +e
-        #	DIR=/tmp/theora
-        #	mkdir -p "$DIR"
-	#	cd "$DIR"
-        #	git clone --depth 1 https://github.com/xiph/theora.git
-        #	cd theora
-        #	./autogen.sh
-        #	./configure \
-        #        	--prefix="$PREFIX" \
-        #	        --enable-shared=no \
-        #	        --enable-static=yes \
-	#		--disable-doc \
-	#		--disable-examples \
-  	#		--with-ogg="$PREFIX/lib" \
-  	#		--with-ogg-libraries="$PREFIX/lib" \
-  	#		--with-ogg-includes="$PREFIX/include/" \
-  	#		--with-vorbis="$PREFIX/lib" \
-  	#		--with-vorbis-libraries="$PREFIX/lib" \
-  	#		--with-vorbis-includes="$PREFIX/include/"
-        #	make && make install
-	#}
+	apt-get install -y \
+		libtheora-dev
 
 	addFeature --enable-libtheora
 
@@ -794,11 +670,9 @@ compileSpeex() {
 		mkdir -p "$DIR"
     	cd "$DIR"
 
-		set -e
 		git clone --depth 1 https://github.com/xiph/speex.git
 		cd speex
-		set +e
-		
+
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
@@ -814,30 +688,14 @@ compileSpeex() {
 }
 
 compileXvid() {
-	hasBeenBuilt xvid
+	echo
+	echo "--- Installing Xvid"
 
-    [ $RESULT -eq 0 ] \
-    && echo "--- Skipping already built xvid" \
-    || {
-        echo "--- Installing xvid"
-
-		DIR=/tmp/xvid
-		mkdir -p "$DIR"
-    	cd "$DIR"
-
-		set -e
-		wget https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz -O xvid.tar.gz
-		tar xf xvid.tar.gz
-		cd xvidcore/build/generic/
-		set +e
-
-		CFLAGS="$CLFAGS -fstrength-reduce -ffast-math" ./configure \
-			--prefix="$PREFIX"
-
-		make && make install
-	}
+	apt-get install -y \
+		libxvidcore-dev
 
 	addFeature --enable-libxvid
+	addExtraLib -lm
 
 	echo
 }
@@ -855,13 +713,11 @@ compileVpx() {
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		set -e
 		apt-get install -y \
 			diffutils
 
 		git clone --depth 1 https://github.com/webmproject/libvpx.git
 		cd libvpx
-		set +e
 
 		./configure \
 			--prefix="$PREFIX" \
@@ -899,11 +755,12 @@ compileX264() {
 		DIR=/tmp/x264
 		mkdir -p "$DIR"
 		cd "$DIR"
-	
-		set -e
+
+		apt-get install -y \
+			nasm
+
 		git clone --depth 1 https://code.videolan.org/videolan/x264.git
 		cd x264/
-		set +e
 
 		./configure \
 			--prefix="$PREFIX" \
@@ -930,11 +787,9 @@ compileX265() {
     	mkdir -p "$DIR"
 		cd "$DIR"
 
-		set -e
 		# Note: x265 does not create .pc file during build if not built from in-depth repo
 		git clone https://github.com/videolan/x265.git
 		cd x265/build/linux/
-		set +e
 
 		cmake -G "Unix Makefiles" \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -966,11 +821,9 @@ compileKvazaar() {
     	mkdir -p "$DIR"
     	cd "$DIR"
 
-		set -e
 		git clone --depth 1 https://github.com/ultravideo/kvazaar.git
 		cd kvazaar
-		set +e
-		
+
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
@@ -997,11 +850,9 @@ compileAom() {
     	mkdir -p "$DIR"
     	cd "$DIR"
 
-		set -e
 		git clone --depth 1 https://aomedia.googlesource.com/aom
 		mkdir -p aom/compile
 		cd aom/compile
-		set +e
 
 		cmake \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -1029,10 +880,10 @@ compileDav1d() {
     || {
         echo "--- Installing dav1d"
 
-		set -e
 		apt-get install -y \
+			nasm \
 			meson \
-			ninja
+			ninja-build
 
 		DIR=/tmp/dav1d
 		mkdir -p "$DIR"
@@ -1040,7 +891,6 @@ compileDav1d() {
 
 		git clone --depth 1 https://code.videolan.org/videolan/dav1d.git
 		cd dav1d
-		set +e
 
 		meson build \
 			--prefix "$PREFIX" \
@@ -1048,10 +898,21 @@ compileDav1d() {
 			--optimization 3 \
 			-Ddefault_library=static
 
-		ninja -C build install
+		# ninja might install pc file somewhere else
+		PC_DIR=$(
+			ninja -C build install \
+				| grep dav1d.pc \
+				| awk '{print $NF}'
+		)
+		
+		if [ $(echo "$OWN_PKG_CONFIG_PATH" | grep -q -- "$PC_DIR"; echo $?) -ne 0 ]; then
+			OWN_PKG_CONFIG_PATH="$OWN_PKG_CONFIG_PATH:$PC_DIR"
+			PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$PC_DIR"
+		fi
 	}
 
 	addFeature --enable-libdav1d
+	addExtraLib -lm
 
 	echo
 }
@@ -1068,7 +929,6 @@ compileFfmpeg() {
 	echo
 	echo "--- Compiling ffmpeg with features $FFMPEG_OPTIONS"
 
-	set -e
 	apt-get install -y zlib1g-dev
 
 	DIR=/tmp/ffmpeg
@@ -1081,7 +941,6 @@ compileFfmpeg() {
 	wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 	tar xjf ffmpeg-snapshot.tar.bz2
 	cd ffmpeg/
-	set +e
 
 	./configure \
 		--env=PKG_CONFIG_PATH="$PKG_CONFIG_PATH" \
@@ -1104,42 +963,42 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	#compileOpenSsl
-	#compileXml2
-	#compileFribidi
-	#compileFreetype
-	#compileFontConfig
-	#compileZimg
-	#compileVidStab
-	#compileAss
+	compileOpenSsl
+	compileXml2
+	compileFribidi
+	compileFreetype
+	compileFontConfig
+	compileZimg
+	compileVidStab
+	compileAss
 	:					#NOOP
 }
 
 compileImageLibs() {
-	#compileOpenJpeg
-	#compileWebp
+	compileOpenJpeg
+	compileWebp
 	:					#NOOP
 }
 
 compileAudioCodecs() {
 	compileSoxr
-	#compileOpus
-	#compileVorbis
-	#compileMp3Lame
-	#compileFdkAac
-	#compileTheora
-	#compileSpeex
+	compileOpus
+	compileVorbis
+	compileMp3Lame
+	compileFdkAac
+	compileTheora
+	compileSpeex
 	:					#NOOP
 }
 
 compileVideoCodecs() {
-	#compileXvid
-	#compileVpx
-	#compileX264
-	#compileAom
-	#compileKvazaar
-	#compileDav1d
-	#compileX265
+	compileXvid
+	compileVpx
+	compileX264
+	compileAom
+	compileKvazaar
+	compileDav1d
+	compileX265
 	:					#NOOP
 }
 
