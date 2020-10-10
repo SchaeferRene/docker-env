@@ -1,3 +1,3 @@
 #! /bin/bash
 
-PRIVOXY_IMAGE="privoxy-alpine-$ARCH"
+export PRIVOXY_IMAGE="privoxy-alpine-$ARCH"

@@ -6,7 +6,6 @@ FEATURES+=(
 	ffmpeg_alpine
 	ffmpeg_debian
 	
-	mpd
 	privoxy
 	ydl
 )

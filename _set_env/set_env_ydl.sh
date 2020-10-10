@@ -1,3 +1,3 @@
 #! /bin/bash
 
-YDL_IMAGE="youtube-dl-alpine-$ARCH"
+export YDL_IMAGE="youtube-dl-alpine-$ARCH"

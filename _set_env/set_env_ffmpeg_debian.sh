@@ -8,7 +8,9 @@ elif [ "$ARCH" = "aarch64" ]; then
 	DEBIAN_BASE="arm64v8/$DEBIAN_BASE";
 fi
 
-FFMPEG_DEBIAN_IMAGE="ffmpeg-debian-$ARCH"
+export DEBIAN_BASE
+export FFMPEG_DEBIAN_IMAGE="ffmpeg-debian-$ARCH"
 
 # disable Harfbuzz for Debian for now as it seems unstable
-BUILDING_HARFBUZZ=1
+export BUILDING_HARFBUZZ=1
+
