@@ -19,7 +19,7 @@ RUN ./compileFfmpeg-debian.sh \
 # copy build artifacts
 FROM ${DEBIAN_BASE}
 COPY --from=builder /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe /usr/local/bin/
-COPY --from=builder /etc/ssl/cert.pem /etc/ssl/cert.pem
+COPY --from=builder /etc/ssl/certs/certSIGN_ROOT_CA.pem /etc/ssl/certs/certSIGN_ROOT_CA.pem
 
 # sanity checks 
 RUN set -xe \
