@@ -1074,9 +1074,8 @@ compileDavs2() {
 		cd davs2-master/build/linux/
 
 		./configure \
-			--prefix "$PREFIX" \
+			--prefix="$PREFIX" \
 			--enable-pic \
-			--enable-static \
 			--disable-cli
 
 		make && make install
