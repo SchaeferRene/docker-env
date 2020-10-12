@@ -952,6 +952,8 @@ compileXavs2() {
 }
 
 compileDavs2() {
+	[ -n "$BUILDING_DAVS2" ] && return
+	
 	hasBeenBuilt davs2
 
     [ $RESULT -eq 0 ] \
