@@ -1,4 +1,6 @@
 #! /bin/sh
+#
+# note that this script is still in experimental state
 
 export PREFIX=/opt/ffmpeg
 export OWN_PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig"
