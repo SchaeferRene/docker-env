@@ -972,9 +972,8 @@ compileDavs2() {
 		cd davs2-master/build/linux/
 
 		./configure \
-			--prefix "$PREFIX" \
+			--prefix="$PREFIX" \
 			--enable-pic \
-			--enable-static \
 			--disable-cli
 
 		make && make install
@@ -1034,14 +1033,14 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	compileOpenSsl
-	compileXml2
+	compileAss
+	compileFontConfig
 	compileFribidi
 	compileFreetype
-	compileFontConfig
-	compileZimg
+	compileOpenSsl
 	compileVidStab
-	compileAss
+	compileXml2
+	compileZimg
 	:					#NOOP
 }
 
@@ -1052,26 +1051,26 @@ compileImageLibs() {
 }
 
 compileAudioCodecs() {
-	compileSoxr
-	compileOpus
-	compileVorbis
-	compileMp3Lame
 	compileFdkAac
-	compileTheora
+	compileMp3Lame
+	compileOpus
+	compileSoxr
 	compileSpeex
+	compileTheora
+	compileVorbis
 	:					#NOOP
 }
 
 compileVideoCodecs() {
-	compileXvid
+	compileAom
+	compileDav1d
+	compileDavs2			# TODO
+	compileKvazaar
 	compileVpx
 	compileX264
-	compileAom
-	compileKvazaar
-	compileDav1d
 	compileX265
 	compileXavs2
-	compileDavs2
+	compileXvid
 	:					#NOOP
 }
 

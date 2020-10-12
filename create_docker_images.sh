@@ -169,7 +169,7 @@ while [[ $# -gt 0 ]]; do
 		--ffmpeg)
 		buildBaseImage base
 		buildBaseImage ffmpeg_alpine
-		buildBaseImage ffmpeg_debian
+		#buildBaseImage ffmpeg_debian
 		;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")
