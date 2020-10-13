@@ -5,6 +5,7 @@ DEBIAN_BASE="debian:$DEBIAN_VERSION"
 if [ "$ARCH" = "armv7" ]; then
 	DEBIAN_BASE="arm32v7/$DEBIAN_BASE";
 	BUILDING_DAVS2=1
+	BUILDING_XAVS2=1
 elif [ "$ARCH" = "aarch64" ]; then
 	DEBIAN_BASE="arm64v8/$DEBIAN_BASE";
 fi

@@ -1022,6 +1022,7 @@ compileDav1d() {
 }
 
 compileXavs2() {
+	[ -n "$BUILDING_XAVS2" ] && return
 	hasBeenBuilt xavs2
 
     [ $RESULT -eq 0 ] \
@@ -1055,6 +1056,7 @@ compileXavs2() {
 }
 
 compileDavs2() {
+	[ -n "$BUILDING_DAVS2" ] && return
 	hasBeenBuilt xavs2
 
     [ $RESULT -eq 0 ] \
