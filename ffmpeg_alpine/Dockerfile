@@ -5,12 +5,17 @@ ARG IMAGE_VERSION=latest
 
 FROM ${IMAGE_TAG}:${IMAGE_VERSION} AS builder
 
+# build switches
+ARG BUILDING_DAVS2
+ARG BUILDING_HARFBUZZ
+ARG BUILDING_XAVS2
+
 WORKDIR /opt/ffmpeg
 
-COPY compileFfmpeg.sh .
+COPY compileFfmpeg-alpine.sh .
 
 # build ffmpeg
-RUN ./compileFfmpeg.sh \
+RUN ./compileFfmpeg-alpine.sh \
 # make sure binaries have no additional dependencies
 	&& set -xe \
 	&& test $(ldd /opt/ffmpeg/bin/ffmpeg | wc -l) -eq 1 \

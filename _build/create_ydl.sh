@@ -1,6 +1,6 @@
 #! /bin/bash
 
-echo "... ... building youtube-dl"
+echo "... ... ... building youtube-dl"
 
 docker build \
 	--build-arg ARCH=$ARCH \

@@ -10,18 +10,26 @@ export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -
 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
 
-FFMPEG_FEATURES="$FFMPEG_FEATURES --enable-pic"
+FFMPEG_FEATURES=""
+FFMPEG_EXTRA_LIBS=""
 
 mkdir -p "$PREFIX"
 
 addFeature() {
-	[ $(echo "$FFMPEG_FEATURES" | grep -q "$1"; echo $?) -eq 0 ] \
+	[ $(echo "$FFMPEG_FEATURES" | grep -q -- "$1"; echo $?) -eq 0 ] \
 		|| FFMPEG_FEATURES="$FFMPEG_FEATURES $1"
 }
 
+addExtraLib() {
+	[ $(echo "$FFMPEG_EXTRA_LIBS" | grep -q -- "$1"; echo $?) -eq 0 ] \
+		|| FFMPEG_EXTRA_LIBS="$FFMPEG_EXTRA_LIBS $1"
+}
+
+
 installFfmpegToolingDependencies() {
 	echo "--- Installing Tooling Dependencies"
-
+	
+	
 	# below dependencies are required to build core ffmpeg according to generic compilation guide
 	apk add --no-cache --update \
 		build-base \
@@ -41,14 +49,16 @@ installFfmpegToolingDependencies() {
 	# TODO: clarify: below dependencies might be for ffplay only
 	echo "--- Installing ffmpeg build Dependencies"
 	apk add --no-cache \
-		libva-dev \
+		libva-dev libvdpau-dev \
 		sdl2-dev sdl2-static sdl2_ttf-dev \
 		libxcb-dev libxcb-static
 
+	
 	echo
 }
 
 dirtyHackForBrotli() {
+	echo
 	echo "--- Applying hack for brotli"
 
 	if [[ ! -e /usr/lib/libbrotlicommon.a -a -e /usr/lib/libbrotlicommon-static.a ]]; then
@@ -60,10 +70,11 @@ dirtyHackForBrotli() {
 }
 
 sanityCheck() {
+	RC=$?
 	echo
-	echo "--- Compilation status: " $?
 
-	if [[ $? -eq 0 ]]; then
+	if [[ $RC -eq 0 ]]; then
+		echo "--- Compilation succeeded"
 		for PRG in ffmpeg ffprobe ffplay
 		do
 			PRG="$PREFIX/bin/$PRG"
@@ -74,6 +85,9 @@ sanityCheck() {
 				echo
 			fi
 		done
+	else
+		echo "... ... build failed with exit status"  $RC
+		[ -f ffbuild/config.log ] && tail -10 ffbuild/config.log
 	fi
 }
 
@@ -91,40 +105,49 @@ hasBeenBuilt() {
 
 compileOpenSsl() {
 	echo "--- Installing OpenSSL"
+	
 
 	apk add --no-cache \
 		openssl \
-                openssl-dev \
-                openssl-libs-static
+        openssl-dev \
+        openssl-libs-static
 
+	
+	
 	addFeature --enable-openssl
 
 	echo
 }
 
 compileXml2() {
-        echo "--- Installing libXml2"
+    echo "--- Installing libXml2"
 
-        apk add --no-cache \
+	
+
+    apk add --no-cache \
 		zlib-dev \
 		zlib-static \
 		libxml2-dev
 
-        addFeature --enable-libxml2
+	
 
-        echo
+    addFeature --enable-libxml2
+
+    echo
 }
 
 compileFribidi() {
-        echo "--- Installing Fribidi"
+    echo "--- Installing Fribidi"
 
-        apk add --no-cache \
-                fribidi-dev \
-                fribidi-static
+	
+    apk add --no-cache \
+            fribidi-dev \
+            fribidi-static
+	
+	
+    addFeature --enable-libfribidi
 
-        addFeature --enable-libfribidi
-
-        echo
+    echo
 }
 
 compileFreetype() {
@@ -143,6 +166,7 @@ compileFreetype() {
 
 		echo "--- Installing FreeType"
 
+		
 		apk add --no-cache \
 			zlib-dev \
 			zlib-static \
@@ -160,8 +184,10 @@ compileFreetype() {
 		mkdir -p "$DIR"
 		cd "$DIR"
 
+		[ -d freetype2 ] && rm -rf freetype2
 		git clone --depth 1 https://git.savannah.nongnu.org/git/freetype/freetype2.git
 		cd freetype2/
+		
 
 		./autogen.sh
 		./configure \
@@ -182,45 +208,48 @@ compileFreetype() {
 
 	echo
 
-	# Freetype + Harfbuzz seems to break Ffmpeg build (at least on ARM)
-	#if [ -z "$BUILDING_HARFBUZZ" ]; then
-	#	compileHarfbuzz
-	#fi
+	# Freetype + Harfbuzz seems to break Ffmpeg build on Alpine
+	if [ -z "$BUILDING_HARFBUZZ" ]; then
+		compileHarfbuzz
+	fi
 }
 
 compileFontConfig() {
 	hasBeenBuilt fontconfig
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built fontconfig" \
-        || {
+    && echo "--- Skipping already built fontconfig" \
+    || {
 		compileFreetype
 
 		echo "--- Installing fontConfig"
 
-                apk add --no-cache \
-        	        libpng-dev \
-                	libpng-static \
+		
+        apk add --no-cache \
+			libpng-dev \
+			libpng-static \
 			expat-dev \
-			expat-static
+			expat-static \
+			gperf
 
 		DIR=/tmp/fontconfig
 		mkdir -p "$DIR"
 		cd "$DIR"
 
-		wget https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.12.1.tar.bz2 \
-			-O fontconfig.tar.bz2
-		tar xjf fontconfig.tar.bz2
-		cd fontconfig*
+		wget https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.gz \
+			-O fontconfig.tar.gz
+		tar -xf fontconfig.tar.gz
+		cd fontconfig-2.13.92
+		
 
-		./configure \
+		PKG_CONFIG_PATH="$PKG_CONFIG_PATH" ./configure \
 			--prefix="$PREFIX" \
 			--enable-static=yes \
 			--enable-shared=no \
-			--disable-docs
+			--disable-docs \
+			--disable-dependency-tracking
 
 		make && make install
-
 	}
 
 	addFeature --enable-fontconfig
@@ -231,9 +260,11 @@ compileFontConfig() {
 compilePixman() {
 	echo "--- Installing Pixman"
 
+	
 	apk add --no-cache \
 		pixman-dev \
 		pixman-static
+	
 
 	echo
 }
@@ -242,18 +273,18 @@ compileCairo() {
 	hasBeenBuilt cairo
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Cairo" \
-        || {
+    && echo "--- Skipping already built Cairo" \
+    || {
 		compilePixman
 		compileFontConfig	# compiles freetype installs xml2 installs zlib
 
 		echo "--- Installing Cairo"
-
+		
 		apk add --no-cache \
 			glib-dev \
 			glib-static \
-        	        libpng-dev \
-                	libpng-static \
+	        libpng-dev \
+        	libpng-static \
 			libx11-dev \
 			libx11-static \
 			libxcb-dev \
@@ -263,50 +294,53 @@ compileCairo() {
 		# TODO: add OpenGL support?
 		# TODO: add directFB support?
 
-                DIR=/tmp/cairo
-                mkdir -p "$DIR"
-                cd "$DIR"
+        DIR=/tmp/cairo
+        mkdir -p "$DIR"
+        cd "$DIR"
 
-                git clone --depth 1 https://github.com/freedesktop/cairo.git
-                cd cairo
+        git clone --depth 1 https://github.com/freedesktop/cairo.git
+        cd cairo
+        
 
-                ./autogen.sh
-                ./configure \
-                        --prefix="$PREFIX" \
-                        --enable-shared=no \
-                        --enable-static=yes
+        ./autogen.sh
+        ./configure \
+            --prefix="$PREFIX" \
+            --enable-shared=no \
+            --enable-static=yes
 
-                make && make install
-        }
+        make && make install
+    }
 
-        echo
+    echo
 }
 
 compileGraphite2() {
 	hasBeenBuilt graphite2
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Graphite2" \
-        || {
-                echo "--- Installing Graphite2"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Graphite2" \
+    || {
+        echo "--- Installing Graphite2"
 
-                DIR=/tmp/graphite2
-                mkdir -p "$DIR"
-                cd "$DIR"
+		
+        DIR=/tmp/graphite2
+        mkdir -p "$DIR"
+        cd "$DIR"
 
-                git clone --depth 1 https://github.com/silnrsi/graphite.git
-                cd graphite
+        git clone --depth 1 https://github.com/silnrsi/graphite.git
+        cd graphite
 
-                mkdir build
-                cd build
+        mkdir -p build
+        cd build
+        
 
-                cmake \
-                        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-                        -DBUILD_SHARED_LIBS=OFF \
-                        ..
+        cmake \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBUILD_SHARED_LIBS=OFF \
+            ..
 
-                make && make install
-        }
+        make && make install
+    }
 	
 	echo
 }
@@ -316,44 +350,46 @@ compileHarfbuzz () {
 	BUILDING_HARFBUZZ=1
 	hasBeenBuilt harfbuzz
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Harfbuzz" \
-        || {
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Harfbuzz" \
+    || {
 		compileCairo	# compiles fontconfig compiles freetype
-				# installs glib
+						# installs glib
 
 		# Harfbuzz doesn't seem to like statically compiled Graphite2
 		#compileGraphite2
 
-                echo "--- Installing Harfbuzz"
+        echo "--- Installing Harfbuzz"
 
-                apk add --no-cache \
+		
+        apk add --no-cache \
 			icu-dev \
 			icu-static
 
-                DIR=/tmp/harfbuzz
-                mkdir -p "$DIR"
-                cd "$DIR"
+        DIR=/tmp/harfbuzz
+        mkdir -p "$DIR"
+        cd "$DIR"
 
-                git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
-                cd harfbuzz
+        git clone --depth 1 https://github.com/harfbuzz/harfbuzz.git
+        cd harfbuzz
+        
 
-                ./autogen.sh
-                ./configure \
-                        --prefix="$PREFIX" \
-                        --enable-shared=no \
-                        --enable-static=yes \
+        ./autogen.sh
+        ./configure \
+            --prefix="$PREFIX" \
+            --enable-shared=no \
+            --enable-static=yes \
 			#--with-graphite2
 
-                make && make install
+        make && make install
 
-        	echo
+    	echo
 
 		# force recompilation of freetype
-		rm "$PREFIX/lib/pkgconfig/freetype.pc"
+		rm "$PREFIX/lib/pkgconfig/freetype2.pc"
 		rm -rf "/tmp/freetype"
 		compileFreetype
-        }
+    }
 }
 
 
@@ -361,20 +397,24 @@ compileAss() {
 	hasBeenBuilt libass
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built libAss" \
-        || {
+    && echo "--- Skipping already built libAss" \
+    || {
 		compileFontConfig # font config also builds freetype
 		compileFribidi
 
 		echo "--- Installing libAss"
 
+		
 		apk add --no-cache nasm
 
 		DIR=/tmp/ass
 		mkdir -p "$DIR"
 		cd "$DIR"
+		
 		git clone --depth 1 https://github.com/libass/libass.git
 		cd libass
+		
+		
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
@@ -393,21 +433,24 @@ compileZimg() {
 	hasBeenBuilt zimg
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built zimg" \
-        || {
+    && echo "--- Skipping already built zimg" \
+    || {
 		echo "--- Installing zimg"
-        	DIR=/tmp/zimg
-        	mkdir -p "$DIR"
-        	cd "$DIR"
+		
+		
+    	DIR=/tmp/zimg
+    	mkdir -p "$DIR"
+    	cd "$DIR"
 
-        	git clone --depth 1 https://github.com/sekrit-twc/zimg.git
-        	cd zimg
-        	./autogen.sh
-
-        	./configure \
-                	--prefix="$PREFIX" \
-                	--enable-shared=no \
-                	--enable-static=yes
+    	git clone --depth 1 https://github.com/sekrit-twc/zimg.git
+    	cd zimg
+    	
+    	
+    	./autogen.sh
+    	./configure \
+            	--prefix="$PREFIX" \
+            	--enable-shared=no \
+            	--enable-static=yes
 
 		make && make install
 	}
@@ -421,19 +464,20 @@ compileVidStab() {
 	hasBeenBuilt vidstab
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built vidstab" \
-        || {
+    && echo "--- Skipping already built vidstab" \
+    || {
 		echo "--- Installing vid.stab"
+		
+		
 		DIR=/tmp/vidstab
 		mkdir -p "$DIR"
-	        cd "$DIR"
+        cd "$DIR"
 
 		git clone --depth 1 https://github.com/georgmartius/vid.stab.git
-		cd vid.stab
-
-		mkdir build
-		cd build
-
+		mkdir -p vid.stab/build
+		cd vid.stab/build
+		
+		
 		cmake \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
 			-DBUILD_SHARED_LIBS=OFF \
@@ -451,18 +495,20 @@ compileWebp() {
 	hasBeenBuilt libwebp
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built libWebp" \
-        || {
+    && echo "--- Skipping already built libWebp" \
+    || {
 		echo "--- Installing webp"
 
+		
 		DIR=/tmp/webp
-        	mkdir -p "$DIR"
-	        cd "$DIR"
+    	mkdir -p "$DIR"
+        cd "$DIR"
 
 		git clone --depth 1 https://github.com/webmproject/libwebp.git
 		cd libwebp
+		
+		
 		./autogen.sh
-
 		./configure \
 			--prefix="$PREFIX" \
 			--enable-shared=no \
@@ -480,16 +526,18 @@ compileOpenJpeg() {
 	hasBeenBuilt libopenjp2
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built OpenJpeg" \
-        || {
+    && echo "--- Skipping already built OpenJpeg" \
+    || {
 		echo "--- Installing OpenJpeg"
 
+		
 		DIR=/tmp/openjpeg
 		mkdir -p "$DIR"
-        	cd "$DIR"
+    	cd "$DIR"
 
 		git clone --depth 1 https://github.com/uclouvain/openjpeg.git
 		cd openjpeg
+		
 
 		cmake -G "Unix Makefiles" \
 			-DBUILD_SHARED_LIBS=OFF \
@@ -504,23 +552,26 @@ compileOpenJpeg() {
 }
 
 compileSoxr() {
-        echo "--- Installing Soxr"
+    echo "--- Installing Soxr"
 
-        apk add --no-cache \
+	
+    apk add --no-cache \
 		soxr-dev \
 		soxr-static
+	
 
-        addFeature --enable-libsoxr
+    addFeature --enable-libsoxr
 
-        echo
+    echo
 }
 
 compileMp3Lame() {
 	[ -e "$PREFIX/lib/libmp3lame.a" ] \
-        && echo "--- Skipping already built mp3lame" \
-        || {
+    && echo "--- Skipping already built mp3lame" \
+    || {
 		echo "--- Installing mp3lame"
 
+		
 		DIR=/tmp/mp3lame
 		mkdir -p "$DIR"
 		cd "$DIR"
@@ -528,6 +579,7 @@ compileMp3Lame() {
 		wget https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download -O lame.tar.gz
 		tar xzf lame.tar.gz
 		cd lame*
+		
 
 		./configure \
 			--prefix="$PREFIX" \
@@ -546,18 +598,20 @@ compileFdkAac() {
 	hasBeenBuilt fdk-aac
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built fdk-aac" \
-        || { 
+    && echo "--- Skipping already built fdk-aac" \
+    || { 
 		echo "--- Installing fdk-aac"
 
+		
 		DIR=/tmp/fdkaac
 		mkdir -p "$DIR"
 		cd "$DIR"
 
 		git clone --depth 1 https://github.com/mstorsjo/fdk-aac
 		cd fdk-aac
+		
+		
 		autoreconf -fiv
-
 		./configure \
 			--prefix="$PREFIX" \
 			--enable-shared=no \
@@ -578,7 +632,9 @@ compileOgg() {
         #|| {
 		echo "--- Installing ogg"
 		# standard version is enough
+		
 		apk add --no-cache libogg-dev
+		
 	#	DIR=/tmp/ogg
 	#	mkdir -p "$DIR"
 	#	cd "$DIR"
@@ -602,7 +658,9 @@ compileVorbis() {
         #|| {
 		echo "--- Installing vorbis"
 		# standard versionis enough
+		
 		apk add --no-cache libvorbis-dev
+		
 	#	compileOgg
         #	DIR=/tmp/vorbis
         #	mkdir -p "$DIR"
@@ -629,7 +687,9 @@ compileOpus() {
         #|| {
 		echo "--- Installing opus"
 		# default opus is enough
+		
 		apk add --no-cache libopusenc-dev
+		
         #	DIR=/tmp/opus
         #	mkdir -p "$DIR"
 	#	cd "$DIR"
@@ -659,8 +719,9 @@ compileTheora() {
 		echo "--- Installing Theora"
 
 		# standard theora is enough
+		
 		apk add --no-cache libtheora-dev libtheora-static
-
+		
         #	DIR=/tmp/theora
         #	mkdir -p "$DIR"
 	#	cd "$DIR"
@@ -687,51 +748,24 @@ compileTheora() {
 	echo
 }
 
-compileWavPack() {
-	hasBeenBuilt wavpack
-
-	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built wavpack" \
-        || {
-		echo "--- Installing wavpack"
-
-		DIR=/tmp/wavpack
-		mkdir -p "$DIR"
-        	cd "$DIR"
-
-		git clone --depth 1 https://github.com/dbry/WavPack.git
-		cd WavPack
-		./autogen.sh
-
-		./configure \
-			--prefix="$PREFIX" \
-			--enable-shared=no \
-			--enable-static=yes
-
-		make && make install
-	}
-
-	addFeature --enable-libwavpack
-
-	echo
-}
-
 compileSpeex() {
 	hasBeenBuilt speex
 
 	[ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built speex" \
-        || {
+    && echo "--- Skipping already built speex" \
+    || {
 		echo "--- Installing speex"
 
+		
 		DIR=/tmp/speex
 		mkdir -p "$DIR"
-        	cd "$DIR"
+    	cd "$DIR"
 
 		git clone --depth 1 https://github.com/xiph/speex.git
 		cd speex
+		
+		
 		./autogen.sh
-
 		./configure \
 			--prefix="$PREFIX" \
 			--enable-shared=no \
@@ -748,18 +782,20 @@ compileSpeex() {
 compileXvid() {
 	hasBeenBuilt xvid
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built xvid" \
-        || {
-                echo "--- Installing xvid"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built xvid" \
+    || {
+        echo "--- Installing xvid"
 
+		
 		DIR=/tmp/xvid
 		mkdir -p "$DIR"
-        	cd "$DIR"
+    	cd "$DIR"
 
 		wget https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz -O xvid.tar.gz
 		tar xf xvid.tar.gz
 		cd xvidcore/build/generic/
+		
 
 		CFLAGS="$CLFAGS -fstrength-reduce -ffast-math" ./configure \
 			--prefix="$PREFIX"
@@ -781,6 +817,7 @@ compileVpx() {
 	|| {
 		echo "--- Installing libVpx"
 
+		
 		DIR=/tmp/vpx
 		mkdir -p "$DIR"
 		cd "$DIR"
@@ -789,6 +826,7 @@ compileVpx() {
 
 		git clone --depth 1 https://github.com/webmproject/libvpx.git
 		cd libvpx
+		
 
 		./configure \
 			--prefix="$PREFIX" \
@@ -823,12 +861,16 @@ compileX264() {
 	|| {
 		echo "--- Installing x264"
 
+		
+		apk add --no-cache nasm
+		
 		DIR=/tmp/x264
 		mkdir -p "$DIR"
 		cd "$DIR"
 	
 		git clone --depth 1 https://code.videolan.org/videolan/x264.git
 		cd x264/
+		
 
 		./configure \
 			--prefix="$PREFIX" \
@@ -846,19 +888,19 @@ compileX264() {
 compileX265() {
 	hasBeenBuilt x265
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built x265" \
-        || {
-                echo "--- Installing x265"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built x265" \
+    || {
+        echo "--- Installing x265"
 
-		apk add --no-cache mercurial
-
-        	DIR=/tmp/x265
-        	mkdir -p "$DIR"
+		
+    	DIR=/tmp/x265
+    	mkdir -p "$DIR"
 		cd "$DIR"
 
-		hg clone https://bitbucket.org/multicoreware/x265
+		git clone https://github.com/videolan/x265.git
 		cd x265/build/linux/
+		
 
 		cmake -G "Unix Makefiles" \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -881,19 +923,21 @@ compileX265() {
 compileKvazaar() {
 	hasBeenBuilt kvazaar
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built Kvazaar" \
-        || {
-                echo "--- Installing Kvazaar"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built Kvazaar" \
+    || {
+        echo "--- Installing Kvazaar"
 
+		
 		DIR=/tmp/kvazaar
         	mkdir -p "$DIR"
         	cd "$DIR"
 
 		git clone --depth 1 https://github.com/ultravideo/kvazaar.git
 		cd kvazaar
+		
+		
 		./autogen.sh
-
 		./configure \
 			--prefix="$PREFIX" \
 			--enable-shared=no \
@@ -910,19 +954,20 @@ compileKvazaar() {
 compileAom() {
 	hasBeenBuilt aom
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built aom" \
-        || {
-                echo "--- Installing aom"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built aom" \
+    || {
+        echo "--- Installing aom"
 
+		
 		DIR=/tmp/aom
-        	mkdir -p "$DIR"
-        	cd "$DIR"
+    	mkdir -p "$DIR"
+    	cd "$DIR"
 
 		git clone --depth 1 https://aomedia.googlesource.com/aom
-		cd aom
-		mkdir compile
-		cd compile
+		mkdir -p aom/compile
+		cd aom/compile
+		
 
 		cmake \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -945,16 +990,19 @@ compileAom() {
 compileDav1d() {
 	hasBeenBuilt dav1d
 
-        [ $RESULT -eq 0 ] \
-        && echo "--- Skipping already built dav1d" \
-        || {
-                echo "--- Installing dav1d"
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built dav1d" \
+    || {
+        echo "--- Installing dav1d"
 
-		apk add --no-cache meson ninja
+		apk add --no-cache \
+			meson \
+			ninja \
+			nasm
 
 		DIR=/tmp/dav1d
 		mkdir -p "$DIR"
-        	cd "$DIR"
+    	cd "$DIR"
 
 		git clone --depth 1 https://code.videolan.org/videolan/dav1d.git
 		cd dav1d
@@ -973,10 +1021,83 @@ compileDav1d() {
 	echo
 }
 
+compileXavs2() {
+	[ -n "$BUILDING_XAVS2" ] && return
+	hasBeenBuilt xavs2
+
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built xavs2" \
+    || {
+        echo "--- Installing xavs2"
+
+		apk add --no-cache \
+			nasm
+
+		DIR=/tmp/xavs2
+		mkdir -p "$DIR"
+    	cd "$DIR"
+
+		wget https://github.com/pkuvcl/xavs2/archive/master.zip -O xavs2.zip
+		unzip xavs2.zip
+		cd xavs2-master/build/linux/
+
+		./configure \
+			--prefix "$PREFIX" \
+			--enable-pic \
+			--enable-static \
+			--disable-cli
+
+		make && make install
+	}
+
+	addFeature --enable-libxavs2
+
+	echo
+}
+
+compileDavs2() {
+	[ -n "$BUILDING_DAVS2" ] && return
+	hasBeenBuilt xavs2
+
+    [ $RESULT -eq 0 ] \
+    && echo "--- Skipping already built davs2" \
+    || {
+        echo "--- Installing davs2"
+
+		apk add --no-cache \
+			nasm
+
+		DIR=/tmp/davs2
+		mkdir -p "$DIR"
+    	cd "$DIR"
+
+		wget https://github.com/pkuvcl/davs2/archive/master.zip -O davs2.zip
+		unzip davs2.zip
+		cd davs2-master/build/linux/
+
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-pic \
+			--disable-cli
+
+		make && make install
+	}
+
+	addFeature --enable-libdavs2
+
+	echo
+}
+
 compileFfmpeg() {
-	FFMPEG_OPTIONS="--disable-shared --enable-static "
-	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc "
-	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3 "
+	# add some default features
+	addFeature --enable-libxcb
+	addFeature --enable-libxcb-shm
+	addFeature --enable-libxcb-xfixes
+	addFeature --enable-libxcb-shape
+	
+	FFMPEG_OPTIONS="--disable-shared --enable-static --enable-pic"
+	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc"
+	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS $FFMPEG_FEATURES"
 
 	echo "--- Compiling ffmpeg with features $FFMPEG_OPTIONS"
@@ -984,6 +1105,9 @@ compileFfmpeg() {
 	apk add zlib-dev zlib-static
 
 	DIR=/tmp/ffmpeg
+	if [ -d "$DIR" ]; then
+	    rm -rf "$DIR"
+	fi
 	mkdir -p "$DIR"
 	cd "$DIR"
 
@@ -1000,6 +1124,7 @@ compileFfmpeg() {
 		--pkg-config=pkg-config \
 		--pkg-config-flags=--static \
 		--toolchain=hardened \
+		--extra-libs="-lz $FFMPEG_EXTRA_LIBS" \
 		$FFMPEG_OPTIONS
 		#--extra-libs="-lpthread -lm -lz" \
 
@@ -1011,42 +1136,48 @@ compileFfmpeg() {
 #############################################
 
 compileSupportingLibs() {
-	compileOpenSsl
-	compileXml2
-	compileFribidi
-	compileFreetype
-	compileFontConfig
-	compileZimg
-	compileVidStab
-	compileAss
+	#compileAss
+	#compileFontConfig
+	#compileFreetype
+	#compileFribidi
+	#compileOpenSsl
+	#compileVidStab
+	#compileXml2
+	#compileZimg
+	:					#NOOP
 }
 
 compileImageLibs() {
-	compileOpenJpeg
-	compileWebp
+	#compileOpenJpeg
+	#compileWebp
+	:					#NOOP
 }
 
 compileAudioCodecs() {
-	compileSoxr
-	compileOpus
-	compileVorbis
-	compileMp3Lame
-	compileFdkAac
-	compileTheora
-	compileWavPack
-	compileSpeex
+	#compileFdkAac
+	#compileMp3Lame
+	#compileOpus
+	#compileSoxr
+	#compileSpeex
+	#compileTheora
+	#compileVorbis
+	:					#NOOP
 }
 
 compileVideoCodecs() {
-	compileXvid
-	compileVpx
-	compileX264
-	compileAom
-	compileKvazaar
-	compileDav1d
-	# didnt get x265 to work yet
+	#compileAom
+	#compileDav1d
+	compileDavs2
+	#compileKvazaar
+	#compileVpx
+	#compileX264
 	#compileX265
+	#compileXavs2
+	#compileXvid
+	:					#NOOP
 }
+
+### Leave the rest as is ####################
 
 installFfmpegToolingDependencies
 compileSupportingLibs
@@ -1059,4 +1190,3 @@ compileFfmpeg
 
 # fingers crossed
 sanityCheck
-
