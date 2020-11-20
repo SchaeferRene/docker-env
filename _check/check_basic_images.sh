@@ -4,7 +4,7 @@
 FEATURES+=(
 	base
 	ffmpeg_alpine
-	#ffmpeg_debian
+	ffmpeg_debian
 	
 	privoxy
 	ydl
