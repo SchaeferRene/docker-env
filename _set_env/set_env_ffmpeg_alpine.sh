@@ -6,6 +6,6 @@ export FFMPEG_ALPINE_IMAGE="ffmpeg-alpine-$ARCH"
 export BUILDING_HARFBUZZ=1
 # disable davs2 and xavs2 which do not compile on arm
 if [ "$ARCH" = "armv7" ]; then
-	export BUILDING_DAVS2=1
-	export BUILDING_XAVS2=1
+	export BUILDING_DAVS2=disabled
+	export BUILDING_XAVS2=disabled
 fi
