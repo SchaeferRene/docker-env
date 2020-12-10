@@ -14,15 +14,18 @@ The script compiles a static version of the latest snapshot release ffmpeg with 
     - dav1d									@latest from git
     - davs									@latest from zip
     - fontconfig							<red>release 2.13.92</red>
-    - with _freetype_
+        - with _freetype_
     - freetype								@latest from git
         - with _xml2_
-        - with ~~harfbuzz~~				@latest from git
+        - with _harfbuzz_				@latest from git
             - with _freetype_
             - with cairo					@latest from git
                 - with pixman			@latest from repo
                 - with _fontconfig_
-            - with graphite2			@latest from git
+                - with glib2			@latest from git
+                - with libPng			@latest from git
+            - with graphite2			<red>release 1.3.10</red>
+                - with _harfbuzz_
     - fribidi								@latest from repo
     - kvazaar								@latest from git
     - libfdk-aac							@latest from git
