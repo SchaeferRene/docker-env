@@ -17,7 +17,11 @@ export PULSE_SOCKET
 
 # base images holds all images that are considered base images
 # i.e. image layers to base other images on, hence must be built first
-BASE_IMAGES=(base ffmpeg_alpine ffmpeg_debian)
+BASE_IMAGES=(
+	base
+	ffmpeg_alpine
+	novnc
+)
 ## features lists all features that CAN be built
 FEATURES=()
 

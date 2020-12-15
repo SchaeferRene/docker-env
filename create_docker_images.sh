@@ -33,7 +33,7 @@ function usage {
 	echo "  -l, --logs      follow logs of built and deployed services"
 	echo "  -r, --run       Run created base image for further evaluation"
 	echo "Services:"
-	echo "      --ffmpeg    Build ffmpeg images (Debian + Alpine)"
+	echo "      --ffmpeg    Build ffmpeg images"
 	#echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
@@ -175,7 +175,6 @@ while [[ $# -gt 0 ]]; do
 		--ffmpeg)
 		buildBaseImage base
 		buildBaseImage ffmpeg_alpine
-		#buildBaseImage ffmpeg_debian
 		;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")

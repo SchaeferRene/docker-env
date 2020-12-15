@@ -19,8 +19,8 @@ The following programs need to be installed for the scripts to be used:
 ## Conventions
 * The user running the scripts must belong to docker group. (use `sudo usermod -aG docker $USER` )
 * The scripts expect all files and folders to be mounted into the docker containers to be located below `DOCKER_VOLUME_ROOT`.
-* Images are always built from the latest program versions in the alpine respectively debian repositories.
-* Images are tagged with the `ALPINE_VERSION` respectively `DEBIAN_VERSION` they are created from.
+* Images are always built from the latest program versions in the alpine repositories.
+* Images are tagged with the `ALPINE_VERSION` they are created from.
 
 ## Configuration
 ### General configuration in `.env`
@@ -29,7 +29,6 @@ Central configuration is done in `.env`. This file is loaded both by `set_env.sh
 The `.env` file contains the following variables:
 
 * `ALPINE_VERSION` - the Alpine version to build all alpine based images on
-* `DEBIAN_VERSION` - Debian version to build debian based images on
 * `DOCKER_ID` - The [DockerId](https://success.docker.com/article/how-do-you-register-for-a-docker-id) to be used to push the created images<br>(Make sure [log in](https://docs.docker.com/engine/reference/commandline/login/) to your account prior to running these scripts with `--push` option)
 * `DOCKER_VOLUME_ROOT` - the root folder that holds all files and folders mounted into the docker images (see *Service specific configuration*)
 * `PULSE_SOCKET` - the pulse audio socket to be mounted into and used by the docker containers (e.g. mpd) (Default: `/tmp/pulse-socket`)
