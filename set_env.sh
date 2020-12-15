@@ -22,6 +22,7 @@ BASE_IMAGES=(base ffmpeg_alpine ffmpeg_debian)
 FEATURES=()
 
 ## common - current user/group and path
+UUID=$(id -u)
 GUID=$(id -g)
 
 for FILENAME in _check/check_*.sh; do

@@ -37,6 +37,7 @@ function usage {
 	#echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
+	echo "      --novnc     Build noVNC image"
 	echo "      --privoxy   Build privoxy image"
 	echo "      --ydl, --youtube-dl"
 	echo "                  Build youtube-dl image"
@@ -89,13 +90,15 @@ function build_image {
 			fi
 		elif [ -r "$DOCKER_FILE" ]; then
 			echo "... ... building $FEATURE"
+			IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+			[ -z "$IMAGE_NAME" ] && IMAGE_NAME="${FEATURE}-alpine-$ARCH"
 			
 			docker build \
 				--pull \
 				--no-cache \
 				--build-arg ARCH=$ARCH \
 				--build-arg DOCKER_ID=$DOCKER_ID \
-				-t $DOCKER_ID/$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"") "$FEATURE"
+				-t $DOCKER_ID/$IMAGE_NAME "$FEATURE"
 			
 			if [ $? -eq 0 ]; then
 				tag_image "$FEATURE"
@@ -112,7 +115,10 @@ function build_image {
 
 function tag_image {
 	FEATURE=$1
-	IMAGE_NAME="$DOCKER_ID/"$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+	IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+	[ -z "$IMAGE_NAME" ] && IMAGE_NAME="${FEATURE}-alpine-$ARCH"
+			
+	IMAGE_NAME="$DOCKER_ID/$IMAGE_NAME"
 	
 	for T in latest ${ALPINE_VERSION}; do
 		TAG=$IMAGE_NAME:$T
@@ -181,6 +187,9 @@ while [[ $# -gt 0 ]]; do
         --nginx)
 		buildBaseImage base
 		buildImage nginx
+        ;;
+        --novnc)
+        buildBaseImage novnc
         ;;
         --privoxy)
 		buildBaseImage base
