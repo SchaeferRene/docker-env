@@ -33,10 +33,11 @@ function usage {
 	echo "  -l, --logs      follow logs of built and deployed services"
 	echo "  -r, --run       Run created base image for further evaluation"
 	echo "Services:"
-	echo "      --ffmpeg    Build ffmpeg images (Debian + Alpine)"
+	echo "      --ffmpeg    Build ffmpeg images"
 	#echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
+	echo "      --novnc     Build noVNC image"
 	echo "      --privoxy   Build privoxy image"
 	echo "      --ydl, --youtube-dl"
 	echo "                  Build youtube-dl image"
@@ -48,6 +49,13 @@ function usage {
 
 function build_image {
 	FEATURE=$1
+	
+	IMAGE_VAR=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${IMG}"")
+	IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+	if [ -z "$IMAGE_NAME" ]; then
+		IMAGE_NAME="${FEATURE}-alpine-$ARCH"
+		eval "export $IMAGE_VAR=\"$IMAGE_NAME\""
+	fi
 	
 	SETUP_FILE="_set_env/set_env_${FEATURE}.sh"
 	COMPOSE_FILE="docker-compose-${FEATURE}.yml"
@@ -89,13 +97,12 @@ function build_image {
 			fi
 		elif [ -r "$DOCKER_FILE" ]; then
 			echo "... ... building $FEATURE"
-			
 			docker build \
 				--pull \
 				--no-cache \
 				--build-arg ARCH=$ARCH \
 				--build-arg DOCKER_ID=$DOCKER_ID \
-				-t $DOCKER_ID/$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"") "$FEATURE"
+				-t $DOCKER_ID/$IMAGE_NAME "$FEATURE"
 			
 			if [ $? -eq 0 ]; then
 				tag_image "$FEATURE"
@@ -112,12 +119,13 @@ function build_image {
 
 function tag_image {
 	FEATURE=$1
-	IMAGE_NAME="$DOCKER_ID/"$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+	IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+	[ -z "$IMAGE_NAME" ] && IMAGE_NAME="${FEATURE}-alpine-$ARCH"
 	
 	for T in latest ${ALPINE_VERSION}; do
-		TAG=$IMAGE_NAME:$T
+		TAG="$DOCKER_ID/$IMAGE_NAME:$T"
 		echo -e "... ... ... tagging as $TAG"
-		docker tag $IMAGE_NAME $TAG
+		docker tag "$DOCKER_ID/$IMAGE_NAME" $TAG
 		push_image $TAG
 	done
 }
@@ -169,7 +177,6 @@ while [[ $# -gt 0 ]]; do
 		--ffmpeg)
 		buildBaseImage base
 		buildBaseImage ffmpeg_alpine
-		#buildBaseImage ffmpeg_debian
 		;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")
@@ -181,6 +188,9 @@ while [[ $# -gt 0 ]]; do
         --nginx)
 		buildBaseImage base
 		buildImage nginx
+        ;;
+        --novnc)
+        buildBaseImage novnc
         ;;
         --privoxy)
 		buildBaseImage base
