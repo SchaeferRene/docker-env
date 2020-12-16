@@ -50,6 +50,13 @@ function usage {
 function build_image {
 	FEATURE=$1
 	
+	IMAGE_VAR=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${IMG}"")
+	IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
+	if [ -z "$IMAGE_NAME" ]; then
+		IMAGE_NAME="${FEATURE}-alpine-$ARCH"
+		eval "export $IMAGE_VAR=\"$IMAGE_NAME\""
+	fi
+	
 	SETUP_FILE="_set_env/set_env_${FEATURE}.sh"
 	COMPOSE_FILE="docker-compose-${FEATURE}.yml"
 	SCRIPT_FILE="./_build/create_${FEATURE}.sh"
@@ -90,9 +97,6 @@ function build_image {
 			fi
 		elif [ -r "$DOCKER_FILE" ]; then
 			echo "... ... building $FEATURE"
-			IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
-			[ -z "$IMAGE_NAME" ] && IMAGE_NAME="${FEATURE}-alpine-$ARCH"
-			
 			docker build \
 				--pull \
 				--no-cache \
@@ -117,13 +121,11 @@ function tag_image {
 	FEATURE=$1
 	IMAGE_NAME=$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"")
 	[ -z "$IMAGE_NAME" ] && IMAGE_NAME="${FEATURE}-alpine-$ARCH"
-			
-	IMAGE_NAME="$DOCKER_ID/$IMAGE_NAME"
 	
 	for T in latest ${ALPINE_VERSION}; do
-		TAG=$IMAGE_NAME:$T
+		TAG="$DOCKER_ID/$IMAGE_NAME:$T"
 		echo -e "... ... ... tagging as $TAG"
-		docker tag $IMAGE_NAME $TAG
+		docker tag "$DOCKER_ID/$IMAGE_NAME" $TAG
 		push_image $TAG
 	done
 }
