@@ -35,6 +35,7 @@ RUN set -x \
 	&& apk del git \
 	&& rm -f /var/cache/apk/* \
 	&& rm -rf /var/cache/fontconfig/* \
+	&& echo '<?xml version="1.0" encoding="UTF-8"?><openbox_menu xmlns="http://openbox.org/3.4/menu"><menu id="root-menu" label="Openbox 3"></menu></openbox_menu>' > /etc/xdg/openbox/menu.xml \
 # setup
 	&& { \
 		echo '[supervisord]'; \
@@ -56,10 +57,10 @@ RUN set -x \
 		echo 'autorestart=true'; \
 		echo; \
 		echo '[program:novnc]'; \
-		echo 'command=/root/noVNC/utils/launch.sh --vnc localhost:5900 --listen 5800'; \
+		echo 'command=/root/noVNC/utils/launch.sh --vnc localhost:5900 --listen 8080'; \
 		echo 'autorestart=true'; \
 	} > /etc/supervisord.conf
 
-EXPOSE 5900 5800
+EXPOSE 5900 8080
 
 ENTRYPOINT [ "/usr/bin/supervisord" ]
