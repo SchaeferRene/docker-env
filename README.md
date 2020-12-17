@@ -47,6 +47,9 @@ for description and usage instructions see [Ffmpeg.md](_doc/Ffmpeg.md)
 ## Flash Video Downloader `youtube-dl`
 for description and usage instructions see [Youtube-dl.md](_doc/Youtube-dl.md)
 
+## Virtual X11 Desktop GUI `noVNC`
+*tbd*
+
 ## Scripts
 ### `create_docker_images.sh`
 Run the main script `create_docker_images.sh` as a docker enabled user in order to create the docker images. The script can be controlled by the following command line arguments:
@@ -59,6 +62,7 @@ Run the main script `create_docker_images.sh` as a docker enabled user in order 
 * `--ffmpeg` - build ffmpeg
 * `--mpd` - build mpd service
 * `--nginx` - build nginx service
+* `--novnc` - build noVNC base image
 * `--ydl` , `--youtube-dl` - build youtube-dl
 
 ### `set_env.sh`
@@ -74,6 +78,7 @@ script to launch a base image for doing some evaluations.
 * extend ffmpeg
 * tvheadend
 * jellyfin
+* ghb
 * *build Webserver and reverse proxy [nginx]*
 * *build git hoster [gitea] for your private repositories*
 * guacamole

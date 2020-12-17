@@ -18,10 +18,10 @@ FFMPEG_EXTRA_LIBS=""
 
 mkdir -p "$PREFIX"
 
-export BUILDING_BROTLI=compile
-export BUILDING_FONTCONFIG=disabled
-export BUILDING_FREETYPE=compile
-export BUILDING_GRAPHITE2=compile
+#export BUILDING_BROTLI=compile
+#export BUILDING_FONTCONFIG=disabled
+#export BUILDING_FREETYPE=compile
+#export BUILDING_GRAPHITE2=compile
 #export BUILDING_HARFBUZZ=disabled
 #export BUILDING_LIBPNG=compile
 
@@ -139,7 +139,7 @@ provide () {
 	
 	RESULT=$?
 	
-	echo -e "${On_IPurple}... done building $1$Color_Off"
+	echo -e "${On_IPurple}... done providing $1$Color_Off"
 }
 
 fn_exists () {
@@ -572,6 +572,248 @@ compileLibPng() {
 	}
 }
 
+## Video ##
+compileDav1d() {
+	hasBeenInstalled dav1d
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built dav1d" \
+	|| {
+	echo "--- Installing dav1d"
+
+		apk add --no-cache \
+			meson \
+			ninja \
+			nasm
+
+		DIR=/tmp/dav1d
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		git clone --depth 1 https://code.videolan.org/videolan/dav1d.git
+		cd dav1d
+
+		meson build \
+			--prefix "$PREFIX" \
+			--buildtype release \
+			-Ddefault_library=static
+
+		ninja -C build
+		ninja -C build install
+	}
+
+	addFeature --enable-libdav1d
+}
+
+compileDavs2() {
+	[ -n "$BUILDING_DAVS2" ] && return
+	hasBeenInstalled davs2
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built davs2" \
+	|| {
+		apk add --no-cache \
+			nasm
+
+		DIR=/tmp/davs2
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		wget https://github.com/pkuvcl/davs2/archive/master.zip -O davs2.zip
+		unzip davs2.zip
+		cd davs2-master/build/linux/
+
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-pic \
+			--disable-cli
+
+		make && make install
+	}
+
+	addFeature --enable-libdavs2
+}
+
+compileKvazaar() {
+	hasBeenInstalled kvazaar
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built Kvazaar" \
+	|| {
+		DIR=/tmp/kvazaar
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		git clone --depth 1 https://github.com/ultravideo/kvazaar.git
+		cd kvazaar
+		
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes
+
+		make && make install
+	}
+
+	addFeature --enable-libkvazaar
+}
+
+# compile VP8/VP9
+compileVpx() {
+	hasBeenInstalled vpx
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built libVpx" \
+	|| {
+		DIR=/tmp/vpx
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		apk add --no-cache diffutils
+
+		git clone --depth 1 https://github.com/webmproject/libvpx.git
+		cd libvpx
+
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-static \
+			--disable-shared \
+			--disable-examples \
+			--disable-tools \
+			--disable-install-bins \
+			--disable-docs \
+			--target=generic-gnu \
+			--enable-vp8 \
+			--enable-vp9 \
+			--enable-vp9-highbitdepth \
+			--enable-pic \
+			--disable-examples \
+			--disable-docs \
+			--disable-debug
+
+		make && make install
+	}
+
+	addFeature --enable-libvpx
+}
+
+compileX264() {
+	hasBeenInstalled x264
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built x264" \
+	|| {
+		apk add --no-cache nasm
+		
+		DIR=/tmp/x264
+		mkdir -p "$DIR"
+		cd "$DIR"
+	
+		git clone --depth 1 https://code.videolan.org/videolan/x264.git
+		cd x264/
+
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-static \
+			--enable-pic
+
+		make && make install
+	}
+
+	addFeature --enable-libx264
+}
+
+compileX265() {			# TODO: compile as multi-lib
+	hasBeenInstalled x265
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built x265" \
+	|| {
+		DIR=/tmp/x265
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		git clone https://github.com/videolan/x265.git
+		cd x265/build/linux/
+
+		cmake -G "Unix Makefiles" \
+			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
+			-DENABLE_SHARED:bool=OFF \
+			-DENABLE_AGGRESSIVE_CHECKS=ON \
+			-DENABLE_PIC=ON \
+			-DENABLE_CLI=ON \
+			-DENABLE_HDR10_PLUS=ON \
+			-DENABLE_LIBNUMA=OFF \
+			../../source
+
+		make && make install
+	}
+
+	addFeature --enable-libx265
+}
+
+compileXavs2() {
+	[ -n "$BUILDING_XAVS2" ] && return
+	hasBeenInstalled xavs2
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built xavs2" \
+	|| {
+		apk add --no-cache \
+			nasm
+
+		DIR=/tmp/xavs2
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		wget https://github.com/pkuvcl/xavs2/archive/master.zip -O xavs2.zip
+		unzip xavs2.zip
+		cd xavs2-master/build/linux/
+
+		./configure \
+			--prefix "$PREFIX" \
+			--enable-pic \
+			--enable-static \
+			--disable-cli
+
+		make && make install
+	}
+
+	addFeature --enable-libxavs2
+}
+
+installXvid() {
+	apk add --no-cache \
+		xvidcore-dev \
+		xvidcore-static
+	
+	addFeature --enable-libxvid
+}
+
+compileXvid() {
+	hasBeenInstalled xvid
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built xvid" \
+	|| {
+		DIR=/tmp/xvid
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		wget https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz -O xvid.tar.gz
+		tar xf xvid.tar.gz
+		cd xvidcore/build/generic/
+		
+		CFLAGS="$CLFAGS -fstrength-reduce -ffast-math" ./configure \
+			--prefix="$PREFIX"
+
+		make && make install
+	}
+
+	addFeature --enable-libxvid
+}
+
 ##############
 ### FFMPEG ###
 ##############
@@ -622,6 +864,7 @@ compileFfmpeg() {
 ### Comment out what you don't need below ###
 #############################################
 #just for individual testing
+# note: c=compile, i=install
 testPrerequisites() {
 	#provide LibPng
 	#provide Glib2
@@ -632,7 +875,7 @@ testPrerequisites() {
 }
 
 compileSupportingLibs() {
-	provide Xml2
+	#provide Xml2
 	#provide Freetype
 	#provide FontConfig
 	##provide Fribidi
@@ -640,13 +883,13 @@ compileSupportingLibs() {
 	##provide OpenSsl
 	##compileVidStab
 	##compileZimg
-	:					#NOOP
+	:					# NOOP
 }
 
 compileImageLibs() {
 	##compileOpenJpeg
 	##compileWebp
-	:					#NOOP
+	:					# NOOP
 }
 
 compileAudioCodecs() {
@@ -657,20 +900,20 @@ compileAudioCodecs() {
 	##compileSpeex
 	##compileTheora
 	##compileVorbis
-	:					#NOOP
+	:					# NOOP
 }
 
 compileVideoCodecs() {
 	##compileAom
-	##compileDav1d
-	##compileDavs2
-	##compileKvazaar
-	##compileVpx
-	##compileX264
-	##compileX265
-	##compileXavs2
-	##compileXvid
-	:					#NOOP
+	provide Dav1d		# x86: c
+	#provide Davs2		# x86: c
+	#provide Kvazaar	# x86: c
+	#provide Vpx		# x86: c
+	#provide X264		# x86: c
+	#provide X265		# x86: c
+	#provide Xavs2		# x86: c
+	#provide Xvid		# x86: ic
+	:					# NOOP
 }
 
 ### Leave the rest as is ####################
