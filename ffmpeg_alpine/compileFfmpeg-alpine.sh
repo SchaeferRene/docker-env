@@ -572,7 +572,203 @@ compileLibPng() {
 	}
 }
 
+## Audio ##
+installOpus() {
+	apk add --no-cache libopusenc-dev
+	addFeature --enable-libopus
+}
+
+compileOpus() {
+	hasBeenInstalled opus
+	
+	[ $RESULT -eq 0 ] \
+	&& echo "-- Skipping already built opus" \
+	|| {
+		DIR=/tmp/opus
+		mkdir -p "$DIR"
+		cd "$DIR"
+		
+		git clone --depth 1 https://github.com/xiph/opus.git
+		cd opus
+		
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes \
+			--disable-doc \
+			--disable-extra-programs
+
+		make && make install
+	}
+
+	addFeature --enable-libopus
+}
+
+installSoxr() {
+	apk add --no-cache \
+		soxr-dev \
+		soxr-static
+
+	addFeature --enable-libsoxr
+}
+
+compileSpeex() {
+	hasBeenInstalled speex
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built speex" \
+	|| {
+		DIR=/tmp/speex
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		git clone --depth 1 https://github.com/xiph/speex.git
+		cd speex
+		
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes
+
+		make && make install
+	}
+
+	addFeature --enable-libspeex
+}
+
+installTheora() {
+	apk add --no-cache libtheora-dev libtheora-static
+	addFeature --enable-libtheora
+}
+
+compileTheora() {
+	hasBeenInstalled theora
+	
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built theora" \
+	|| {
+		provide Ogg
+		echo "--- Installing Theora"
+		
+		DIR=/tmp/theora
+		mkdir -p "$DIR"
+		cd "$DIR"
+		
+		git clone --depth 1 https://github.com/xiph/theora.git
+		cd theora
+		
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes \
+			--disable-doc \
+			--disable-examples \
+			--with-ogg="$PREFIX/lib" \
+			--with-ogg-libraries="$PREFIX/lib" \
+			--with-ogg-includes="$PREFIX/include/" \
+			--with-vorbis="$PREFIX/lib" \
+			--with-vorbis-libraries="$PREFIX/lib" \
+			--with-vorbis-includes="$PREFIX/include/"
+
+		make && make install
+	}
+
+	addFeature --enable-libtheora
+}
+
+installOgg() {
+	apk add --no-cache libogg-dev
+}
+
+compileOgg() {
+	hasBeenInstalled ogg
+	
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built ogg" \
+	|| {
+		DIR=/tmp/ogg
+		mkdir -p "$DIR"
+		cd "$DIR"
+		
+		git clone --depth 1 https://github.com/xiph/ogg.git
+		cd ogg
+		
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes
+			
+		make && make install
+	}
+}
+
+installVorbis() {
+	apk add --no-cache libvorbis-dev
+	addFeature --enable-libvorbis
+}
+
+compileVorbis() {
+	hasBeenInstalled vorbis
+	
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built vorbis" \
+	|| {
+		provide Ogg
+		
+		DIR=/tmp/vorbis
+		mkdir -p "$DIR"
+		cd "$DIR"
+		
+		git clone --depth 1 https://github.com/xiph/vorbis.git
+		cd vorbis
+
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=no \
+			--enable-static=yes
+
+		make && make install
+	}
+
+	addFeature --enable-libvorbis
+}
+
 ## Video ##
+compileAom() {
+	hasBeenInstalled aom
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built aom" \
+	|| {
+		DIR=/tmp/aom
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		git clone --depth 1 https://aomedia.googlesource.com/aom
+		mkdir -p aom/compile
+		cd aom/compile
+
+		cmake \
+			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
+			-DBUILD_SHARED_LIBS=OFF \
+			-DENABLE_TESTS=0 \
+			-DENABLE_EXAMPLES=OFF \
+			-DENABLE_DOCS=OFF \
+			-DENABLE_TOOLS=OFF \
+			-DAOM_TARGET_CPU=generic \
+			..
+
+		make && make install
+	}
+
+	addFeature --enable-libaom
+}
+
 compileDav1d() {
 	hasBeenInstalled dav1d
 
@@ -895,17 +1091,17 @@ compileImageLibs() {
 compileAudioCodecs() {
 	##compileFdkAac
 	##compileMp3Lame
-	##compileOpus
-	##compileSoxr
-	##compileSpeex
-	##compileTheora
-	##compileVorbis
+	provide Opus		# x86: ic
+	#provide Soxr		# x86: i
+	#provide Speex		# x86: c
+	#provide Theora		# x86: ic
+	#provide Vorbis		# x86: ic
 	:					# NOOP
 }
 
 compileVideoCodecs() {
-	##compileAom
-	provide Dav1d		# x86: c
+	#provide Aom		# x86: c
+	#provide Dav1d		# x86: c
 	#provide Davs2		# x86: c
 	#provide Kvazaar	# x86: c
 	#provide Vpx		# x86: c
