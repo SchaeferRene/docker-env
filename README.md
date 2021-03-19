@@ -85,4 +85,3 @@ script to launch a base image for doing some evaluations.
 [mpd clients]: https://www.musicpd.org/clients/
 [nginx]: https://www.nginx.com/
 [postgres]: https://hub.docker.com/_/postgres
-[privoxy]: https://www.privoxy.org/

@@ -39,7 +39,6 @@ function usage {
 	echo "      --nginx     Build nginx image"
 	echo "      --novnc     Build noVNC image"
 	echo "      --postgres  Build postgreSQL image"
-	echo "      --privoxy   Build privoxy image"
 	echo "      --ydl, --youtube-dl"
 	echo "                  Build youtube-dl image"
 
@@ -203,10 +202,6 @@ while [[ $# -gt 0 ]]; do
         --postgres)
 		buildImage postgres
 		;;
-        --privoxy)
-		buildBaseImage base
-		buildImage privoxy
-        	;;
         --ydl|--youtube-dl)
 		buildBaseImage base
 		buildImage ydl

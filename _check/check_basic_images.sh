@@ -6,6 +6,5 @@ FEATURES+=(
 	gitea
 	ffmpeg_alpine
 	novnc
-	privoxy
 	ydl
 )
