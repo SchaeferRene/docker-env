@@ -3,6 +3,7 @@
 echo "... ... ... building ffmpeg_alpine"
 
 docker build \
+	--network host \
 	--build-arg ARCH=$ARCH \
 	--build-arg DOCKER_ID=$DOCKER_ID \
 	--build-arg BUILDING_HARFBUZZ=$BUILDING_HARFBUZZ \

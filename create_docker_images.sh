@@ -34,7 +34,7 @@ function usage {
 	echo "  -r, --run       Run created base image for further evaluation"
 	echo "Services:"
 	echo "      --ffmpeg    Build ffmpeg images"
-	#echo "      --gitea     Build gitea image"
+	echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
 	echo "      --novnc     Build noVNC image"
@@ -106,6 +106,7 @@ function build_image {
 			docker build \
 				--pull \
 				--no-cache \
+				--network host \
 				--build-arg ARCH=$ARCH \
 				--build-arg DOCKER_ID=$DOCKER_ID \
 				-t $DOCKER_ID/$IMAGE_NAME "$FEATURE"
@@ -166,53 +167,54 @@ while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
         -h|--help)
-        usage
-        ;;
+        	usage
+        	;;
         -a|--all)
-        IS_BUILD_ALL=0
-        ;;
+        	IS_BUILD_ALL=0
+        	;;
         -p|--push)
-        IS_PUSH_IMAGES=0
-        ;;
+        	IS_PUSH_IMAGES=0
+        	;;
         -l|--logs)
-        IS_FOLLOW_LOGS=0
-        ;;
+        	IS_FOLLOW_LOGS=0
+        	;;
         -r|--run)
-        IS_RUN_BASE=0
-        ;;
+        	IS_RUN_BASE=0
+        	;;
 	--ffmpeg)
-	buildBaseImage base
-	buildBaseImage ffmpeg_alpine
-	;;
-#        --gitea)
-#        BUILD_IMAGES+=("gitea")
-#        ;;
+		buildBaseImage base
+		buildBaseImage ffmpeg_alpine
+		;;
+        --gitea)
+		buildBaseImage base
+		buildImage gitea
+        	;;
         --mpd)
 		buildBaseImage base
 		buildImage mpd
-        ;;
+        	;;
         --nginx)
 		buildBaseImage base
 		buildImage nginx
-        ;;
+        	;;
         --novnc)
-        buildBaseImage novnc
-        ;;
+        	buildBaseImage novnc
+        	;;
         --postgres)
-	buildImage postgres
-	;;
+		buildImage postgres
+		;;
         --privoxy)
 		buildBaseImage base
 		buildImage privoxy
-        ;;
+        	;;
         --ydl|--youtube-dl)
 		buildBaseImage base
 		buildImage ydl
-        ;;
+        	;;
         *)
-        echo "... ... ... Unknown option '$key'"
-        usage
-        ;;
+        	echo "... ... ... Unknown option '$key'"
+        	usage
+        	;;
     esac
     # Shift after checking all the cases to get the next option
     shift

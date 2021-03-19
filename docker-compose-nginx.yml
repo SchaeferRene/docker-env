@@ -5,6 +5,7 @@ services:
     image: $DOCKER_ID/$NGINX_IMAGE
     build:
       context: ./nginx
+      network: host
       args:
         IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE
         IMAGE_VERSION: $ALPINE_VERSION

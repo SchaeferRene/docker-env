@@ -36,6 +36,9 @@ The `.env` file contains the following variables:
 
 
 # Services
+## [gitea] Git repository manager
+Gitea's web interface runs on port 3000, and the ssh interface is connected to port 2200.
+
 ## [ffmpeg]
 for description and usage instructions see [Ffmpeg.md](_doc/Ffmpeg.md)
 
@@ -46,7 +49,7 @@ for description and usage instructions see [Mpd.md](_doc/Mpd.md)
 *tbd*
 
 ## [PostgreSQL][postgres] database
-The scripts use the official PostgreSQL image. To use it store the credentials in a file named ˋpostgresUser.txtˋ respectively ˋpostgresPassword.txtˋ in the secrets directory.
+The scripts use the official PostgreSQL imagei exposing it via standard port 5432. To use it store the credentials in a file named ˋpostgresUser.txtˋ respectively ˋpostgresPassword.txtˋ in the secrets directory.
 
 ## `youtube-dl` Flash Video Downloader
 for description and usage instructions see [Youtube-dl.md](_doc/Youtube-dl.md)

@@ -3,9 +3,9 @@
 # basic images can always be built
 FEATURES+=(
 	base
-	novnc
+	gitea
 	ffmpeg_alpine
-	
+	novnc
 	privoxy
 	ydl
 )
