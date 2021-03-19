@@ -22,8 +22,12 @@ BASE_IMAGES=(
 	ffmpeg_alpine
 	novnc
 )
+
+## external lists all features that reuse external images
+EXTERNAL=(postgres)
+
 ## features lists all features that CAN be built
-FEATURES=()
+FEATURES=(${EXTERNAL[*]})
 
 ## common - current user/group and path
 UUID=$(id -u)

@@ -38,6 +38,7 @@ function usage {
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
 	echo "      --novnc     Build noVNC image"
+	echo "      --postgres  Build postgreSQL image"
 	echo "      --privoxy   Build privoxy image"
 	echo "      --ydl, --youtube-dl"
 	echo "                  Build youtube-dl image"
@@ -64,6 +65,7 @@ function build_image {
 	
 	IS_REQUESTED_BASE=$(case "${BUILD_BASE_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "BASE" ;; esac)
 	IS_REQUESTED_FEATURE=$(case "${BUILD_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "REQUESTED" ;; esac)
+	IS_PUSH_IMAGE=$(case "${EXTERNAL[@]}" in *"${FEATURE}"*) echo -n "NO_PUSH" ;; esac)
 	
 	if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE$IS_REQUESTED_BASE" ]; then
 		echo
@@ -74,15 +76,19 @@ function build_image {
 		fi
 		
 		if [ -f $COMPOSE_FILE ]; then
-			echo "... ... composing $FEATURE"
-			docker-compose -f $COMPOSE_FILE build
+			if [ -z "$IS_PUSH_IMAGE" ]; then
+				echo "... ... composing $FEATURE"
+				docker-compose -f $COMPOSE_FILE build
 	
-			if [ $? -eq 0 ]; then
-				tag_image "$FEATURE"
-				DEPLOY_IMAGES+=("$COMPOSE_FILE")
+				if [ $? -eq 0 ]; then
+					tag_image "$FEATURE"
+					DEPLOY_IMAGES+=("$COMPOSE_FILE")
+				else
+					echo "... ... build failed"
+					exit 10
+				fi
 			else
-				echo "... ... build failed"
-				exit 10
+				DEPLOY_IMAGES+=("$COMPOSE_FILE")
 			fi
 		elif [ -x "$SCRIPT_FILE" ]; then
 			echo "... ... triggering $SCRIPT_FILE"
@@ -174,10 +180,10 @@ while [[ $# -gt 0 ]]; do
         -r|--run)
         IS_RUN_BASE=0
         ;;
-		--ffmpeg)
-		buildBaseImage base
-		buildBaseImage ffmpeg_alpine
-		;;
+	--ffmpeg)
+	buildBaseImage base
+	buildBaseImage ffmpeg_alpine
+	;;
 #        --gitea)
 #        BUILD_IMAGES+=("gitea")
 #        ;;
@@ -192,6 +198,9 @@ while [[ $# -gt 0 ]]; do
         --novnc)
         buildBaseImage novnc
         ;;
+        --postgres)
+	buildImage postgres
+	;;
         --privoxy)
 		buildBaseImage base
 		buildImage privoxy
@@ -215,6 +224,8 @@ CURRENTPATH=$(pwd)
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 trap finish EXIT
 cd "$SCRIPTPATH"
+
+#set -x
 
 # determine central configuration
 echo "... ... loading central configuration"

@@ -1,6 +1,6 @@
 # docker-env
 ## About
-`docker-env` is my personal playground to create and orchestrate different Docker images for different architectures on local machine.
+`docker-env` is my personal playground to create and/or orchestrate different Docker images for different architectures on local machine.
 
 The scripts have been tested with:
 
@@ -31,20 +31,24 @@ The `.env` file contains the following variables:
 * `ALPINE_VERSION` - the Alpine version to build all alpine based images on
 * `DOCKER_ID` - The [DockerId](https://success.docker.com/article/how-do-you-register-for-a-docker-id) to be used to push the created images<br>(Make sure [log in](https://docs.docker.com/engine/reference/commandline/login/) to your account prior to running these scripts with `--push` option)
 * `DOCKER_VOLUME_ROOT` - the root folder that holds all files and folders mounted into the docker images (see *Service specific configuration*)
+* ˋSECRETS_ROOTˋ - the directory where secrets are stored
 * `PULSE_SOCKET` - the pulse audio socket to be mounted into and used by the docker containers (e.g. mpd) (Default: `/tmp/pulse-socket`)
 
 
 # Services
-## Music player Daemon [mpd]
-for description and usage instructions see [Mpd.md](_doc/Mpd.md)
-
-## WebServer & Reverse Proxy [nginx]
-*tbd*
-
 ## [ffmpeg]
 for description and usage instructions see [Ffmpeg.md](_doc/Ffmpeg.md)
 
-## Flash Video Downloader `youtube-dl`
+## [mpd] Music player Daemon
+for description and usage instructions see [Mpd.md](_doc/Mpd.md)
+
+## [nginx] WebServer & Reverse Proxy
+*tbd*
+
+## [PostgreSQL][postgres] database
+The scripts use the official PostgreSQL image. To use it store the credentials in a file named ˋpostgresUser.txtˋ respectively ˋpostgresPassword.txtˋ in the secrets directory.
+
+## `youtube-dl` Flash Video Downloader
 for description and usage instructions see [Youtube-dl.md](_doc/Youtube-dl.md)
 
 ## Scripts
@@ -70,19 +74,12 @@ for manually running docker compose scripts as well.
 ### `docker-run-*.sh`
 script to launch a base image for doing some evaluations.
 
-## Roadmap
-* extend ffmpeg
-* tvheadend
-* jellyfin
-* *build Webserver and reverse proxy [nginx]*
-* *build git hoster [gitea] for your private repositories*
-* guacamole
-* wireguard
-* cups with splix + AirPrint
 
+<!-- links -->
 [ffmpeg]: https://ffmpeg.org
 [gitea]: https://gitea.io/en-us/
 [mpd]: https://www.musicpd.org
 [mpd clients]: https://www.musicpd.org/clients/
-[privoxy]: https://www.privoxy.org/
 [nginx]: https://www.nginx.com/
+[postgres]: https://hub.docker.com/_/postgres
+[privoxy]: https://www.privoxy.org/
