@@ -23,8 +23,10 @@ RUN \
 	&& make clean-all build \
 	&& go build contrib/environment-to-ini/environment-to-ini.go \
 	&& mkdir -p docker/root/app/gitea \
-	&& mv gitea docker/root/app/gitea \
-	&& mv environment-to-ini docker/root/app/gitea
+	&& mkdir -p docker/root/usr/local/bin \
+	&& mv gitea docker/root/usr/local/bin \
+	&& mv environment-to-ini docker/root/usr/local/bin \
+	&& ln -s /usr/local/bin/gitea docker/root/app/gitea/gitea
 
 # build final image
 RUN echo "IMAGE="$IMAGE_TAG:$IMAGE_VERSION
@@ -32,6 +34,9 @@ RUN echo "IMAGE="$IMAGE_TAG:$IMAGE_VERSION
 FROM ${IMAGE_TAG}:${IMAGE_VERSION}
 
 COPY --from=build-env  /go/src/code.gitea.io/gitea/docker/root /
+
+ENV USER git
+ENV GITEA_CUSTOM /data/gitea
 
 RUN \
 	apk --no-cache add \
@@ -48,8 +53,10 @@ RUN \
 		gnupg \
 	&& addgroup -S -g 1000 git \
 	&& adduser -S -H -D -h /data/git -s /bin/bash -u 1000 -G git git \
-	&& echo "git:$(dd if=/dev/urandom bs=24 count=1 status=none | base64)" | chpasswd \
-	&& ln -s /app/gitea/gitea /usr/local/bin/gitea
+	&& echo "git:$(dd if=/dev/urandom bs=24 count=1 status=none | base64)" | chpasswd
+
+VOLUME ["/data"]
+EXPOSE 3000 22
 
 ENTRYPOINT ["/usr/bin/entrypoint"]
 CMD ["/bin/s6-svscan", "/etc/s6"]
