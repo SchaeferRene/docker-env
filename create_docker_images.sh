@@ -34,11 +34,11 @@ function usage {
 	echo "  -r, --run       Run created base image for further evaluation"
 	echo "Services:"
 	echo "      --ffmpeg    Build ffmpeg images"
-	#echo "      --gitea     Build gitea image"
+	echo "      --gitea     Build gitea image"
 	echo "      --mpd       Build mpd image"
 	echo "      --nginx     Build nginx image"
 	echo "      --novnc     Build noVNC image"
-	echo "      --privoxy   Build privoxy image"
+	echo "      --postgres  Build postgreSQL image"
 	echo "      --ydl, --youtube-dl"
 	echo "                  Build youtube-dl image"
 
@@ -64,6 +64,7 @@ function build_image {
 	
 	IS_REQUESTED_BASE=$(case "${BUILD_BASE_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "BASE" ;; esac)
 	IS_REQUESTED_FEATURE=$(case "${BUILD_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "REQUESTED" ;; esac)
+	IS_PUSH_IMAGE=$(case "${EXTERNAL[@]}" in *"${FEATURE}"*) echo -n "NO_PUSH" ;; esac)
 	
 	if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE$IS_REQUESTED_BASE" ]; then
 		echo
@@ -74,15 +75,19 @@ function build_image {
 		fi
 		
 		if [ -f $COMPOSE_FILE ]; then
-			echo "... ... composing $FEATURE"
-			docker-compose -f $COMPOSE_FILE build
+			if [ -z "$IS_PUSH_IMAGE" ]; then
+				echo "... ... composing $FEATURE"
+				docker-compose -f $COMPOSE_FILE build
 	
-			if [ $? -eq 0 ]; then
-				tag_image "$FEATURE"
-				DEPLOY_IMAGES+=("$COMPOSE_FILE")
+				if [ $? -eq 0 ]; then
+					tag_image "$FEATURE"
+					DEPLOY_IMAGES+=("$COMPOSE_FILE")
+				else
+					echo "... ... build failed"
+					exit 10
+				fi
 			else
-				echo "... ... build failed"
-				exit 10
+				DEPLOY_IMAGES+=("$COMPOSE_FILE")
 			fi
 		elif [ -x "$SCRIPT_FILE" ]; then
 			echo "... ... triggering $SCRIPT_FILE"
@@ -100,6 +105,7 @@ function build_image {
 			docker build \
 				--pull \
 				--no-cache \
+				--network host \
 				--build-arg ARCH=$ARCH \
 				--build-arg DOCKER_ID=$DOCKER_ID \
 				-t $DOCKER_ID/$IMAGE_NAME "$FEATURE"
@@ -160,50 +166,50 @@ while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
         -h|--help)
-        usage
-        ;;
+        	usage
+        	;;
         -a|--all)
-        IS_BUILD_ALL=0
-        ;;
+        	IS_BUILD_ALL=0
+        	;;
         -p|--push)
-        IS_PUSH_IMAGES=0
-        ;;
+        	IS_PUSH_IMAGES=0
+        	;;
         -l|--logs)
-        IS_FOLLOW_LOGS=0
-        ;;
+        	IS_FOLLOW_LOGS=0
+        	;;
         -r|--run)
-        IS_RUN_BASE=0
-        ;;
-		--ffmpeg)
+        	IS_RUN_BASE=0
+        	;;
+	--ffmpeg)
 		buildBaseImage base
 		buildBaseImage ffmpeg_alpine
 		;;
-#        --gitea)
-#        BUILD_IMAGES+=("gitea")
-#        ;;
+        --gitea)
+		buildBaseImage base
+		buildImage gitea
+        	;;
         --mpd)
 		buildBaseImage base
 		buildImage mpd
-        ;;
+        	;;
         --nginx)
 		buildBaseImage base
 		buildImage nginx
-        ;;
+        	;;
         --novnc)
-        buildBaseImage novnc
-        ;;
-        --privoxy)
-		buildBaseImage base
-		buildImage privoxy
-        ;;
+        	buildBaseImage novnc
+        	;;
+        --postgres)
+		buildImage postgres
+		;;
         --ydl|--youtube-dl)
 		buildBaseImage base
 		buildImage ydl
-        ;;
+        	;;
         *)
-        echo "... ... ... Unknown option '$key'"
-        usage
-        ;;
+        	echo "... ... ... Unknown option '$key'"
+        	usage
+        	;;
     esac
     # Shift after checking all the cases to get the next option
     shift
@@ -215,6 +221,8 @@ CURRENTPATH=$(pwd)
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 trap finish EXIT
 cd "$SCRIPTPATH"
+
+#set -x
 
 # determine central configuration
 echo "... ... loading central configuration"

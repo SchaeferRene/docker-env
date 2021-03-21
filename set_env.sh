@@ -22,12 +22,20 @@ BASE_IMAGES=(
 	ffmpeg_alpine
 	novnc
 )
-## features lists all features that CAN be built
-FEATURES=()
 
-## common - current user/group and path
-UUID=$(id -u)
-GUID=$(id -g)
+## external lists all features that reuse external images
+EXTERNAL=(postgres)
+
+## features lists all features that CAN be built
+FEATURES=(${EXTERNAL[*]})
+
+## common
+### current user/group and path
+export UUID=$(id -u)
+export GUID=$(id -g)
+
+### hostname
+export HOSTNAME=$(cat /etc/hostname)
 
 for FILENAME in _check/check_*.sh; do
 	#echo "... ... sourcing $FILENAME"

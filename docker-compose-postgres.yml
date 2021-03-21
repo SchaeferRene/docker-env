@@ -1,0 +1,23 @@
+version: '3'
+
+secrets:
+  postgres-user:
+    file: ${SECRETS_ROOT}/postgresUser.txt
+  postgres-password:
+    file: ${SECRETS_ROOT}/postgresPassword.txt
+
+services:
+  postgres:
+    image: postgres:alpine
+    command: -c "listen_addresses=*"
+    restart: unless-stopped
+    volumes:
+      - /srv/docker/postgres/:/var/lib/postgresql/data/
+    secrets:
+      - postgres-user
+      - postgres-password
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/postgres-user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+    ports:
+      - 5432:5432

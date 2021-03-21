@@ -1,14 +1,32 @@
 version: '3'
 
 services:
-  nginx:
+  gitea:
     image: $DOCKER_ID/$GITEA_IMAGE
     build:
       context: ./gitea
+      network: host
       args:
         IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE
         IMAGE_VERSION: $ALPINE_VERSION
     restart: unless-stopped
     ports:
-      - "22:22"
+      - "2200:22"
       - "3000:3000"
+    environment:
+      DB_TYPE: sqlite3
+      DOMAIN: ${HOSTNAME}
+      HTTP_PORT: 3000
+      INSTALL_LOCK: "false"
+      REQUIRE_SIGNIN_VIEW: "true"
+      # ROOT_URL
+      SSH_DOMAIN: ${HOSTNAME}
+      SSH_LISTEN_PORT: 22
+      SSH_PORT: 2222
+      USER_GID: ${GUID}
+      USER_UID: ${UUID}
+    volumes:
+      - ${DOCKER_VOLUME_ROOT}/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+

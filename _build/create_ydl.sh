@@ -5,6 +5,7 @@ echo "... ... ... building youtube-dl"
 docker build \
 	--build-arg ARCH=$ARCH \
 	--build-arg DOCKER_ID=$DOCKER_ID \
+	--network host \
 	-t $DOCKER_ID/$(IMG="${FEATURE^^}_IMAGE"; echo -n ""${!IMG}"") - < "$FEATURE/Dockerfile"
 
 echo -e "\n\e[36musage:\e[0m"

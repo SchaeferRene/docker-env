@@ -5,6 +5,7 @@ services:
     image: $DOCKER_ID/$MPD_IMAGE
     build:
       context: ./mpd
+      network: host
       args:
         IMAGE_TAG: $DOCKER_ID/$BASE_IMAGE
         IMAGE_VERSION: $ALPINE_VERSION
