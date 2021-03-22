@@ -3,27 +3,28 @@
 #####################
 ### Configuration ###
 #####################
+## Fixed versions
+OPENCORE_AMR_VERSION=0.1.5
+LIBMP3LAME_VERSION=3.100
+
+## Paths
 export PREFIX=/opt/ffmpeg
-export OWN_PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig"
+export OWN_PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib64/pkgconfig:$PREFIX/lib/pkgconfig"
 export PKG_CONFIG_PATH="$OWN_PKG_CONFIG_PATH:/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:/lib64/pkgconfig:/lib/pkgconfig"
 export LD_LIBRARY_PATH="$PREFIX/lib64:$PREFIX/lib:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib64:/lib"
 export MAKEFLAGS=-j2
-export CFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
-export CXXFLAGS="-O3 -static-libgcc -fno-strict-overflow -fstack-protector-all -fPIE"
+export CFLAGS="-fPIC"
+export CXXFLAGS="-fPIC"
 export PATH="$PREFIX/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-export LDFLAGS="-Wl,-z,relro,-z,now,-lz"
+export LDFLAGS=""
 
 FFMPEG_FEATURES=""
 FFMPEG_EXTRA_LIBS=""
+THEORA_FLAGS=""
 
 mkdir -p "$PREFIX"
 
-#export BUILDING_BROTLI=compile
-#export BUILDING_FONTCONFIG=disabled
-#export BUILDING_FREETYPE=compile
-#export BUILDING_GRAPHITE2=compile
-#export BUILDING_HARFBUZZ=disabled
-#export BUILDING_LIBPNG=compile
+export BUILDING_VPX=compile
 
 echo "--- Configuration:"
 env | grep BUILDING_ | sort
@@ -31,7 +32,7 @@ echo
 
 # some text color constants
 Color_Off='\033[0m'       # Text Reset
-On_IPurple='\033[0;105m'  # Purple
+On_IPurple='\033[0;105m'  # Purple Inverse
 
 ########################
 ### Common functions ###
@@ -51,28 +52,27 @@ installFfmpegToolingDependencies() {
 	
 	# below dependencies are required to build core ffmpeg according to generic compilation guide
 	apk add --no-cache --update \
-		build-base \
 		autoconf \
 		automake \
+		build-base \
 		cmake \
 		git \
-		wget \
-		tar \
-		pkgconfig \
 		libtool \
+		pkgconfig \
+		tar \
 		texinfo \
+		wget \
 		yasm
 
 	echo
 
-	# TODO: clarify: below dependencies might be for ffplay only
-	echo "--- Installing ffmpeg build Dependencies"
-	apk add --no-cache \
-		libva-dev libvdpau-dev \
-		sdl2-dev sdl2-static sdl2_ttf-dev \
-		libxcb-dev libxcb-static
-	
-	echo
+	#echo "--- Installing ffmpeg build Dependencies"
+	#apk add --no-cache \
+	#	libva-dev libvdpau-dev \
+	#	sdl2-dev sdl2-static sdl2_ttf-dev \
+	#	libxcb-dev libxcb-static
+	#
+	#echo
 }
 
 sanityCheck() {
@@ -105,7 +105,7 @@ hasBeenInstalled() {
 	
 	echo "--- Checking $1 in $PCP"
 
-	RESULT=$(PKG_CONFIG_PATH="$PCP" pkg-config --exists --no-cache --env-only --static --print-errors $1; echo $?)
+	RESULT=$(PKG_CONFIG_PATH="$PCP" pkg-config --exists --no-cache --env-only --shared --print-errors $1; echo $?)
 	
 	[ $RESULT -eq 0 ] && echo "... found" || echo "... not found"
 	echo
@@ -138,7 +138,7 @@ provide () {
 	fi
 	
 	RESULT=$?
-	
+
 	echo -e "${On_IPurple}... done providing $1$Color_Off"
 }
 
@@ -146,24 +146,20 @@ fn_exists () {
 	type $1 >/dev/null 2>&1;
 }
 
-#############
-### Hacks ###
-#############
-dirtyHackForBrotli() {
-	echo
-	echo "--- Applying hack for brotli"
-
-	if [[ ! -e /usr/lib/libbrotlicommon.a -a -e /usr/lib/libbrotlicommon-static.a ]]; then
-		ln -s /usr/lib/libbrotlicommon-static.a /usr/lib/libbrotlicommon.a
-	fi
-	if [[ ! -e /usr/lib/libbrotlidec.a -a -e /usr/lib/libbrotlidec-static.a ]]; then
-		ln -s /usr/lib/libbrotlidec-static.a /usr/lib/libbrotlidec.a
-	fi
-}
-
 ####################
 ### Dependencies ###
 ####################
+installXcb () {
+	#todo
+
+	# add some default features
+	addFeature --enable-libxcb
+	addFeature --enable-libxcb-shm
+	addFeature --enable-libxcb-xfixes
+	addFeature --enable-libxcb-shape
+	
+}
+
 compileGlib2 () {
 	hasBeenInstalled glib-2.0
 	
@@ -204,6 +200,7 @@ compileGlib2 () {
 			..
 
 		ninja && ninja install
+		cd && rm -rf "$DIR"
 	}
 }
 
@@ -332,6 +329,7 @@ compileCairo() {
 			--enable-static=yes
 		
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 }
 
@@ -371,6 +369,7 @@ compileHarfbuzz () {
 			--with-graphite2
 
 		make && make install
+		cd && rm -rf "$DIR"
 		
 		# force recompilation of Graphite2
 		[ -d /tmp/graphite2 ] && rm -rf /tmp/graphite2
@@ -397,8 +396,6 @@ installBrotli() {
 	apk add --no-cache \
 		brotli-dev \
 		brotli-static
-
-	dirtyHackForBrotli
 }
 
 compileBrotli() {
@@ -422,9 +419,10 @@ compileBrotli() {
 			--enable-static=yes
 		
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 }
-pr
+
 ################
 ### Features ###
 ################
@@ -495,6 +493,7 @@ compileFreetype() {
 			$FREETYPE_FLAGS
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libfreetype
@@ -534,6 +533,7 @@ compileFontConfig() {
 			--disable-dependency-tracking
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-fontconfig
@@ -569,12 +569,102 @@ compileLibPng() {
 			--enable-unversioned-libpng-config
 		
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 }
 
+installOpenJpeg() {
+        apk add --no-cache openjpeg-dev
+        addFeature --enable-libopenjpeg
+}
+
+compileOpenJpeg() {
+	hasBeenInstalled libopenjp2
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built OpenJpeg" \
+	|| {
+		DIR=/tmp/openjpeg
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		git clone --depth 1 https://github.com/uclouvain/openjpeg.git
+		cd openjpeg
+
+		cmake -G "Unix Makefiles" \
+			-DBUILD_SHARED_LIBS=ON \
+			-DCMAKE_INSTALL_PREFIX="$PREFIX"
+
+		make install
+		cd && rm -rf "$DIR"
+	}
+
+	addFeature --enable-libopenjpeg
+}
+
+installWebp() {
+        apk add --no-cache libwebp-dev
+        addFeature --enable-libwebp
+}
+
+compileWebp() {
+	hasBeenInstalled libwebp
+
+	[ $RESULT -eq 0 ] \
+	&& echo "--- Skipping already built libWebp" \
+	|| {
+		DIR=/tmp/webp
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		git clone --depth 1 https://github.com/webmproject/libwebp.git
+		cd libwebp
+		
+		./autogen.sh
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=yes \
+			--enable-static=no
+
+		make && make install
+		cd && rm -rf "$DIR"
+	}
+	
+	addFeature --enable-libwebp
+}
+
 ## Audio ##
+installMp3Lame() {
+        apk add --no-cache lame-dev
+        addFeature --enable-libmp3lame
+}
+
+compileMp3Lame() {
+	[ -e "$PREFIX/lib/libmp3lame.so" ] \
+	&& echo "--- Skipping already built mp3lame" \
+	|| {
+		DIR=/tmp/mp3lame
+		mkdir -p "$DIR"
+		cd "$DIR"
+
+		wget https://sourceforge.net/projects/lame/files/lame/$LIBMP3LAME_VERSION/lame-$LIBMP3LAME_VERSION.tar.gz/download -O lame.tar.gz
+		tar xzf lame.tar.gz
+		cd lame*
+
+		./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=yes \
+			--enable-static=no
+
+		make && make install
+		cd && rm -rf "$DIR"
+	}
+
+	addFeature --enable-libmp3lame
+}
+
 installOpus() {
-	apk add --no-cache libopusenc-dev
+	apk add --no-cache opus-dev
 	addFeature --enable-libopus
 }
 
@@ -594,12 +684,13 @@ compileOpus() {
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
-			--enable-shared=no \
-			--enable-static=yes \
+			--enable-shared=yes \
+			--enable-static=no \
 			--disable-doc \
 			--disable-extra-programs
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libopus
@@ -633,13 +724,14 @@ compileSpeex() {
 			--enable-static=yes
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libspeex
 }
 
 installTheora() {
-	apk add --no-cache libtheora-dev libtheora-static
+	apk add --no-cache libtheora-dev
 	addFeature --enable-libtheora
 }
 
@@ -650,6 +742,8 @@ compileTheora() {
 	&& echo "--- Skipping already built theora" \
 	|| {
 		provide Ogg
+		provide Vorbis
+
 		echo "--- Installing Theora"
 		
 		DIR=/tmp/theora
@@ -662,18 +756,15 @@ compileTheora() {
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
-			--enable-shared=no \
-			--enable-static=yes \
+			--enable-shared=yes \
+			--enable-static=no \
 			--disable-doc \
 			--disable-examples \
-			--with-ogg="$PREFIX/lib" \
-			--with-ogg-libraries="$PREFIX/lib" \
-			--with-ogg-includes="$PREFIX/include/" \
-			--with-vorbis="$PREFIX/lib" \
-			--with-vorbis-libraries="$PREFIX/lib" \
-			--with-vorbis-includes="$PREFIX/include/"
+			$THEORA_FLAGS
+
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libtheora
@@ -699,11 +790,38 @@ compileOgg() {
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
-			--enable-shared=no \
-			--enable-static=yes
+			--enable-shared=yes \
+			--enable-static=no
 			
 		make && make install
+		cd && rm -rf "$DIR"
 	}
+
+	THEORA_FLAGS="$THEORA_FLAGS --with-ogg=\"$PREFIX/lib\" --with-ogg-libraries=\"$PREFIX/lib\" --with-ogg-includes=\"$PREFIX/include/\""
+}
+
+compileOpenCoreAMR() {
+	hasBeenInstalled opencore-amrnb
+
+        [ $RESULT -eq 0 ] \
+        && echo "--- Skipping already built OpenCORE AMR" \
+        || {
+                DIR=/tmp/opencore-amr
+                mkdir "$DIR"
+                cd "$DIR"
+
+                wget https://sourceforge.net/projects/opencore-amr/files/opencore-amr/opencore-amr-${OPENCORE_AMR_VERSION}.tar.gz/download -O opencore-amr-${OPENCORE_AMR_VERSION}.tar.gz
+                tar -zxf opencore-amr-${OPENCORE_AMR_VERSION}.tar.gz
+                cd opencore-amr-${OPENCORE_AMR_VERSION}/
+
+                ./configure --prefix="$PREFIX" --enable-shared
+                make && make install
+
+                cd && rm -rf "$DIR"
+        }
+
+        addFeature --enable-libopencore-amrnb
+        addFeature --enable-libopencore-amrwb
 }
 
 installVorbis() {
@@ -729,12 +847,14 @@ compileVorbis() {
 		./autogen.sh
 		./configure \
 			--prefix="$PREFIX" \
-			--enable-shared=no \
-			--enable-static=yes
+			--enable-shared=yes \
+			--enable-static=no
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
+	THEORA_FLAGS="$THEORA_FLAGS  --with-vorbis=\"$PREFIX/lib\" --with-vorbis-libraries=\"$PREFIX/lib\" --with-vorbis-includes=\"$PREFIX/include/\""
 	addFeature --enable-libvorbis
 }
 
@@ -764,6 +884,7 @@ compileAom() {
 			..
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libaom
@@ -796,6 +917,8 @@ compileDav1d() {
 
 		ninja -C build
 		ninja -C build install
+
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libdav1d
@@ -825,6 +948,7 @@ compileDavs2() {
 			--disable-cli
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libdavs2
@@ -850,12 +974,18 @@ compileKvazaar() {
 			--enable-static=yes
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libkvazaar
 }
 
 # compile VP8/VP9
+installVpx() {
+	apk add --no-cache libvpx-dev
+        addFeature --enable-libvpx
+}
+
 compileVpx() {
 	hasBeenInstalled vpx
 
@@ -873,8 +1003,8 @@ compileVpx() {
 
 		./configure \
 			--prefix="$PREFIX" \
-			--enable-static \
-			--disable-shared \
+			--disable-static \
+			--enable-shared \
 			--disable-examples \
 			--disable-tools \
 			--disable-install-bins \
@@ -884,14 +1014,18 @@ compileVpx() {
 			--enable-vp9 \
 			--enable-vp9-highbitdepth \
 			--enable-pic \
-			--disable-examples \
-			--disable-docs \
 			--disable-debug
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libvpx
+}
+
+installX264() {
+        apk add --no-cache x264-dev
+        addFeature --enable-libx264
 }
 
 compileX264() {
@@ -911,13 +1045,20 @@ compileX264() {
 
 		./configure \
 			--prefix="$PREFIX" \
-			--enable-static \
-			--enable-pic
+			--enable-shared \
+			--enable-pic \
+			--disable-cli
 
 		make && make install
+		cd && rm-rf "$DIR"
 	}
 
 	addFeature --enable-libx264
+}
+
+installX265() {
+        apk add --no-cache x265-dev
+        addFeature --enable-libx265
 }
 
 compileX265() {			# TODO: compile as multi-lib
@@ -933,17 +1074,24 @@ compileX265() {			# TODO: compile as multi-lib
 		git clone https://github.com/videolan/x265.git
 		cd x265/build/linux/
 
+		# TODO: 10bit / 12bit 
+
+		# do 8bit build
+		mkdir 8bit && cd 8bit
 		cmake -G "Unix Makefiles" \
 			-DCMAKE_INSTALL_PREFIX="$PREFIX" \
-			-DENABLE_SHARED:bool=OFF \
+			-DENABLE_SHARED:bool=ON \
 			-DENABLE_AGGRESSIVE_CHECKS=ON \
 			-DENABLE_PIC=ON \
-			-DENABLE_CLI=ON \
-			-DENABLE_HDR10_PLUS=ON \
 			-DENABLE_LIBNUMA=OFF \
-			../../source
+			-DENABLE_CLI=OFF \
+			../../../source
+		make
 
-		make && make install
+		cd ..
+		make -C 8bit install
+
+		cd && rm-rf "$DIR"
 	}
 
 	addFeature --enable-libx265
@@ -974,6 +1122,7 @@ compileXavs2() {
 			--disable-cli
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libxavs2
@@ -1005,6 +1154,7 @@ compileXvid() {
 			--prefix="$PREFIX"
 
 		make && make install
+		cd && rm -rf "$DIR"
 	}
 
 	addFeature --enable-libxvid
@@ -1014,20 +1164,15 @@ compileXvid() {
 ### FFMPEG ###
 ##############
 compileFfmpeg() {
-	# add some default features
-	addFeature --enable-libxcb
-	addFeature --enable-libxcb-shm
-	addFeature --enable-libxcb-xfixes
-	addFeature --enable-libxcb-shape
-	
-	FFMPEG_OPTIONS="--disable-shared --enable-static --enable-pic"
-	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc"
+	FFMPEG_OPTIONS="--enable-shared --enable-static --enable-pic --enable-avresample"
+	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc --disable-ffplay"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3"
+	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-small --enable-postproc"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS $FFMPEG_FEATURES"
 
 	echo "--- Compiling ffmpeg with features $FFMPEG_OPTIONS"
 
-	apk add zlib-dev zlib-static
+	#apk add zlib-dev
 
 	DIR=/tmp/ffmpeg
 	if [ -d "$DIR" ]; then
@@ -1043,17 +1188,14 @@ compileFfmpeg() {
 	./configure \
 		--env=PKG_CONFIG_PATH="$PKG_CONFIG_PATH" \
 		--prefix="$PREFIX" \
-		--extra-cflags="-I${PREFIX}/include -fopenmp" \
-		--extra-ldflags="-L${PREFIX}/lib -static -fopenmp" \
-		--extra-ldexeflags="-static" \
-		--pkg-config=pkg-config \
-		--pkg-config-flags=--static \
+		--extra-cflags="-I${PREFIX}/include" \
+		--extra-ldflags="-L${PREFIX}/lib" \
 		--toolchain=hardened \
-		--extra-libs="-lz $FFMPEG_EXTRA_LIBS" \
+		--extra-libs="$FFMPEG_EXTRA_LIBS" \
 		$FFMPEG_OPTIONS
-		#--extra-libs="-lpthread -lm -lz" \
-
-	make && make install
+	RESULT=$?
+	[ $RESULT -eq 0 ] && make && make install
+	cd && rm -rf "$DIR"
 }
 
 #############################################
@@ -1067,7 +1209,7 @@ testPrerequisites() {
 	#provide Graphite2
 	#provide Cairo
 	#provide Harfbuzz
-	:					# NOOP
+	: # NOOP
 }
 
 compileSupportingLibs() {
@@ -1079,37 +1221,39 @@ compileSupportingLibs() {
 	##provide OpenSsl
 	##compileVidStab
 	##compileZimg
-	:					# NOOP
+	: # NOOP
 }
 
-compileImageLibs() {
-	##compileOpenJpeg
-	##compileWebp
-	:					# NOOP
+compileImageLibs() {		# armv7
+	#provide OpenJpeg	# ic
+	#provide Webp		# ic
+	: # NOOP
 }
 
-compileAudioCodecs() {
+compileAudioCodecs() {		# armv7
 	##compileFdkAac
-	##compileMp3Lame
-	provide Opus		# x86: ic
-	#provide Soxr		# x86: i
-	#provide Speex		# x86: c
-	#provide Theora		# x86: ic
-	#provide Vorbis		# x86: ic
-	:					# NOOP
+	provide Mp3Lame		# ic
+	#provide OpenCoreAMR	# c
+	#provide Opus		# ic
+	#provide Soxr
+	#provide Speex
+	#provide Theora		# ic
+	#provide Vorbis		# ic
+		# Ogg:		  ic
+	: # NOOP
 }
 
-compileVideoCodecs() {
-	#provide Aom		# x86: c
-	#provide Dav1d		# x86: c
-	#provide Davs2		# x86: c
-	#provide Kvazaar	# x86: c
-	#provide Vpx		# x86: c
-	#provide X264		# x86: c
-	#provide X265		# x86: c
-	#provide Xavs2		# x86: c
-	#provide Xvid		# x86: ic
-	:					# NOOP
+compileVideoCodecs() {		# armv7
+	#provide Aom
+	#provide Dav1d
+	#provide Davs2
+	#provide Kvazaar
+	#provide Vpx		# ic
+	#provide X264		# ic
+	#provide X265		# ic(8bit)
+	#provide Xavs2
+	#provide Xvid
+	: # NOOP
 }
 
 ### Leave the rest as is ####################
@@ -1125,3 +1269,4 @@ provide Ffmpeg
 
 # fingers crossed
 sanityCheck
+
