@@ -606,32 +606,32 @@ compileSupportingLibs() {	# armv7
 	provide Fribidi		# i
 
 	#provide Aribb24		# c
-	#provide LibAss		# ic
-	#provide LibBluray	# i
-	#provide LibXcb		# i
+	provide LibAss		# ic
+	provide LibBluray	# i
+	provide LibXcb		# i
 	provide OpenSsl		# i
-	#provide Srt		# i
-	#provide VidStab		# ic
+	provide Srt		# i
+	provide VidStab		# ic
 	#provide ZeroMq		# i
-	#provide Zimg		# d*
+	provide Zimg		# d*
 	: # NOOP
 
 	# *	fails due to missing 'asm/hwcap.h'
 }
 
 compileImageLibs() {		# armv7
-	#provide OpenJpeg	# ic
-	#provide Webp		# ic
+	provide OpenJpeg	# ic
+	provide Webp		# ic
 	: # NOOP
 }
 
 compileAudioCodecs() {		# armv7
 	provide FdkAac		# ic
 	provide Mp3Lame		# ic
-	#provide OpenCoreAMR	# c
+	provide OpenCoreAMR	# c
 	provide Opus		# ic
-	#provide Soxr		# i
-	#provide Speex		# ic
+	provide Soxr		# i
+	provide Speex		# ic
 	provide Theora		# ic
 	provide Vorbis		# ic
 		# Ogg:		  ic
@@ -641,12 +641,12 @@ compileAudioCodecs() {		# armv7
 compileVideoCodecs() {		# armv7
 	#provide Aom		# ic
 	#provide Dav1d		# i
-	#provide Davs2		# d*
+	provide Davs2		# d*
 	#provide Kvazaar		# c
 	#provide Vpx		# ic
 	provide X264		# ic
 	provide X265		# ic(8bit)
-	#provide Xavs2		# d*
+	provide Xavs2		# d*
 	provide Xvid		# ic
 	: # NOOP
 
