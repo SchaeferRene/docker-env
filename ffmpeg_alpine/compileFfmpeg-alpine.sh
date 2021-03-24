@@ -72,7 +72,6 @@ installFfmpegToolingDependencies() {
 	#apk add --no-cache \
 	#	libva-dev libvdpau-dev \
 	#	sdl2-dev sdl2-static sdl2_ttf-dev \
-	#	libxcb-dev libxcb-static
 	#
 	#echo
 	return $RESULT
