@@ -81,13 +81,13 @@ function build_image {
 	
 				if [ $? -eq 0 ]; then
 					tag_image "$FEATURE"
-					DEPLOY_IMAGES+=("$COMPOSE_FILE")
+					[ -n "$IS_REQUESTED_FEATURE$IS_REQUESTED_BASE" ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
 				else
 					echo "... ... build failed"
 					exit 10
 				fi
 			else
-				DEPLOY_IMAGES+=("$COMPOSE_FILE")
+				[ -n "$IS_REQUESTED_FEATURE$IS_REQUESTED_BASE" ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
 			fi
 		elif [ -x "$SCRIPT_FILE" ]; then
 			echo "... ... triggering $SCRIPT_FILE"
