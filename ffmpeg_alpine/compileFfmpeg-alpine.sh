@@ -3,13 +3,6 @@
 #####################
 ### Configuration ###
 #####################
-## Fixed versions
-FONTCONFIG_VERSION=2.13.92 		# Note: 2.13.93 additionally requires python
-GRAPHITE2_VERSION=1.3.10
-LIBMP3LAME_VERSION=3.100
-OPENCORE_AMR_VERSION=0.1.5
-XVID_VERSION=1.3.7
-
 ## Paths
 SCRIPT_NAME=$(basename $0)
 export PREFIX=/opt/ffmpeg
@@ -24,32 +17,27 @@ export LDFLAGS=""
 
 mkdir -p "$PREFIX"
 
+# some text color constants
+Color_Off='\033[0m'	# Text Reset
+On_IRed='\033[0;101m'	# Red Inverse
+
 ## script vars
 FFMPEG_FEATURES=""
 FFMPEG_EXTRA_LIBS=""
 THEORA_FLAGS=""
 
 # Build config
-export BUILDING_BROTLI=install
-export BUILDING_FREETYPE=compile
-export BUILDING_LIBPNG=install
-
-export BUILDING_GLIB2=disabled
-export BUILDING_HARFBUZZ=disabled
+export BUILDING_DAVS2=disabled
+export BUILDING_XAVS2=disabled
 export BUILDING_ZIMG=disabled
 
-echo "--- Configuration:"
+echo -e "${On_IRed}--- Configuration:${Color_Off}"
 env | grep BUILDING_ | sort
 echo
-
-# some text color constants
-Color_Off='\033[0m'	# Text Reset
-On_IRed='\033[0;101m'	# Red Inverse
 
 ########################
 ### Common functions ###
 ########################
-
 addFeature() {
 	[ $(echo "$FFMPEG_FEATURES" | grep -q -- "$1"; echo $?) -eq 0 ] \
 		|| FFMPEG_FEATURES="$FFMPEG_FEATURES $1"
@@ -61,7 +49,7 @@ addExtraLib() {
 }
 
 installFfmpegToolingDependencies() {
-	echo "--- Installing Tooling Dependencies"
+	echo -e "${On_IRed}--- Installing Tooling Dependencies${Color_Off}"
 	
 	# below dependencies are required to build core ffmpeg according to generic compilation guide
 	apk add --no-cache --update \
@@ -69,6 +57,7 @@ installFfmpegToolingDependencies() {
 		automake \
 		build-base \
 		cmake \
+		curl \
 		git \
 		libtool \
 		pkgconfig \
@@ -159,7 +148,7 @@ provide () {
 			fn_exists "compile$1"
 			RESULT=$?
 			if [ $RESULT -ne 0 ]; then 
-				echo "missing functions install$1 or compile$1"
+				echo "!!! missing functions install$1 or compile$1"
 			else
 				echo -e "--- Compiling $1$Color_Off"
 				eval "compile$1"
@@ -170,7 +159,9 @@ provide () {
 	TMP=$?
 	[ $RESULT -eq 0 ] && RESULT=$TMP
 	
-	echo -e "${On_IRed}... done providing $1 with RC $RESULT$Color_Off"
+	[ $RESULT -eq 0 ] \
+		&& echo -e "${On_IRed}... done providing $1$Color_Off" \
+		|| echo -e "${On_IRed}!!! failed to provide $1 with RC $RESULT$Color_Off" 
 }
 
 fn_exists () {
@@ -186,6 +177,38 @@ fn_exists () {
 ################
 
 ## Supplementary ##
+compileAribb24() {
+        hasBeenInstalled aribb24 true
+
+        [ $CHECK -eq 0 ] \
+        && echo "--- Skipping already built aribb24" \
+        || {
+		apk add --no-cache libpng-dev
+
+                DIR=/tmp/aribb24
+                mkdir -p "$DIR"
+                cd "$DIR"
+
+		RELEASE=$( curl --silent https://github.com/nkoriyama/aribb24/releases/latest | sed -E 's/.*"([^"]+)".*/\1/')
+		RELEASE=$(basename $RELEASE)
+
+		curl -sLO https://github.com/nkoriyama/aribb24/archive/${RELEASE}.tar.gz \
+		&& tar -xz --strip-components=1 -f ${RELEASE}.tar.gz \
+		&& autoreconf -fiv \
+                && ./configure \
+			CFLAGS="-I${PREFIX}/include -fPIC" \
+                        --prefix="$PREFIX" \
+                        --enable-shared=yes \
+                        --enable-static=no \
+                && make \
+                && make install \
+                && cd \
+                && rm -rf "$DIR"
+        }
+
+        addFeature --enable-libaribb24
+}
+
 installFreetype() {
 	apk add --no-cache freetype-dev \
 	&& addFeature --enable-libfreetype
@@ -201,14 +224,32 @@ installFontConfig() {
 	&& addFeature --enable-fontconfig
 }
 
-installSrt() {
-	apk add --no-cache libsrt-dev \
-	&& addFeature --enable-libsrt
+installLibAss () {
+	apk add --no-cache libass-dev \
+        && addFeature --enable-libass
+}
+
+installLibBluray() {
+	apk add --no-cache libbluray-dev \
+	&& addFeature --enable-libbluray
+}
+
+installLibXcb() {
+	apk add --no-cache libxcb-dev \
+	&& addFeature --enable-libxcb \
+	&& addFeature --enable-libxcb-shm \
+	&& addFeature --enable-libxcb-xfixes \
+	&& addFeature --enable-libxcb-shape
 }
 
 installOpenSsl() {
 	apk add --no-cache openssl-dev \
 	&& addFeature --enable-openssl
+}
+
+installSrt() {
+	apk add --no-cache libsrt-dev \
+	&& addFeature --enable-libsrt
 }
 
 installVidStab() {
@@ -219,6 +260,11 @@ installVidStab() {
 installXml2() {
 	apk add --no-cache libxml2-dev \
 	&& addFeature --enable-libxml2
+}
+
+installZeroMq() {
+	apk add --no-cache zeromq-dev \
+	&& addFeature --enable-libzmq
 }
 
 compileZimg() {
@@ -286,11 +332,14 @@ compileOpenCoreAMR() {
                 mkdir "$DIR"
                 cd "$DIR"
 
-                wget https://sourceforge.net/projects/opencore-amr/files/opencore-amr/opencore-amr-${OPENCORE_AMR_VERSION}.tar.gz/download -O opencore-amr-${OPENCORE_AMR_VERSION}.tar.gz
-                tar -zxf opencore-amr-${OPENCORE_AMR_VERSION}.tar.gz
-                cd opencore-amr-${OPENCORE_AMR_VERSION}/
+		git clone --depth 1 https://git.code.sf.net/p/opencore-amr/code opencore-amr
+		cd opencore-amr
 
-                ./configure --prefix="$PREFIX" --enable-shared \
+		autoreconf -fiv \
+                && ./configure \
+			--prefix="$PREFIX" \
+			--enable-shared=yes \
+			--enable-static=no \
                 && make \
 		&& make install \
                 && cd \
@@ -470,10 +519,9 @@ compileXavs2() {
 		cd xavs2-master/build/linux/
 
 		./configure \
-			--prefix "$PREFIX" \
+			--prefix="$PREFIX" \
 			--enable-pic \
 			--enable-shared \
-			--disable-static \
 			--disable-cli \
 		&& make \
 		&& make install \
@@ -495,7 +543,7 @@ installXvid() {
 ### FFMPEG ###
 ##############
 compileFfmpeg() {
-	FFMPEG_OPTIONS="--enable-shared --enable-static --enable-pic --enable-avresample"
+	FFMPEG_OPTIONS="--enable-shared --disable-static --enable-pic --enable-avresample"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc --disable-ffplay"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-small --enable-postproc"
@@ -525,13 +573,26 @@ compileFfmpeg() {
 		--extra-libs="$FFMPEG_EXTRA_LIBS" \
 		$FFMPEG_OPTIONS
 
-	CHECK=$?
-	[ $CHECK -eq 0 ] \
+	RESULT=$?
+
+	[ $RESULT -eq 0 ] \
 	&& make \
 	&& make install \
+	&& make tools/qt-faststart \
+	&& cp tools/qt-faststart ${PREFIX}/bin/
+
+	RESULT=$?
+
+	if [ $RESULT -eq 0 -a $(echo "$FFMPEG_FEATURES" | grep -q -- ""--enable-libzmq; echo $?) -eq 0 ]; then
+		make tools/zmqsend \
+		&& cp tools/zmqsend ${PREFIX}/bin/
+
+		RESULT=$?
+	fi
+
+	[ $RESULT -eq 0 ] \
 	&& cd \
 	&& rm -rf "$DIR"
-	CHECK=$?
 }
 
 #############################################
@@ -539,19 +600,19 @@ compileFfmpeg() {
 #############################################
 # note: c=compile, i=install, d=disable
 compileSupportingLibs() {	# armv7
-	#provide Xml2		# i
-	#provide Freetype	# ic
-		# -> Xml2
-		# LibPng	# ic
-		# Brotli	# ic
-		# LibBzip2	# i
-	#provide FontConfig	# c
-		# -> FreeType
-	#provide Fribidi		# i
-	#provide Srt		# i
-	#provide Ass		# ic
+	provide Xml2		# i
+	provide Freetype	# ic
+	provide FontConfig	# c
+	provide Fribidi		# i
+
+	#provide Aribb24		# c
+	#provide LibAss		# ic
+	#provide LibBluray	# i
+	#provide LibXcb		# i
 	#provide OpenSsl		# i
+	#provide Srt		# i
 	#provide VidStab		# ic
+	#provide ZeroMq		# i
 	#provide Zimg		# d*
 	: # NOOP
 
@@ -566,7 +627,7 @@ compileImageLibs() {		# armv7
 
 compileAudioCodecs() {		# armv7
 	#provide FdkAac		# ic
-	#provide Mp3Lame	# ic
+	#provide Mp3Lame		# ic
 	#provide OpenCoreAMR	# c
 	#provide Opus		# ic
 	#provide Soxr		# i
@@ -579,20 +640,21 @@ compileAudioCodecs() {		# armv7
 
 compileVideoCodecs() {		# armv7
 	#provide Aom		# ic
-	provide Dav1d		# i
-	#provide Davs2
-	#provide Kvazaar	# c
+	#provide Dav1d		# i
+	#provide Davs2		# d*
+	#provide Kvazaar		# c
 	#provide Vpx		# ic
 	#provide X264		# ic
 	#provide X265		# ic(8bit)
-	#provide Xavs2
+	#provide Xavs2		# d*
 	#provide Xvid		# ic
 	: # NOOP
+
+	# * missing arm support
 }
 
 ### Leave the rest as is ####################
 installFfmpegToolingDependencies
-testPrerequisites
 compileSupportingLibs
 compileImageLibs
 compileAudioCodecs

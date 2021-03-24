@@ -1,3 +1,8 @@
+FONTCONFIG_VERSION=2.13.92              # Note: 2.13.93 additionally requires python
+GRAPHITE2_VERSION=1.3.10
+LIBMP3LAME_VERSION=3.100
+XVID_VERSION=1.3.7
+
 installAss() {
         apk add --no-cache libass-dev \
         && addFeature --enable-libass
