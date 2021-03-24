@@ -605,14 +605,14 @@ compileSupportingLibs() {	# armv7
 	provide FontConfig	# c
 	provide Fribidi		# i
 
-	#provide Aribb24		# c
+	provide Aribb24		# c
 	provide LibAss		# ic
 	provide LibBluray	# i
 	provide LibXcb		# i
 	provide OpenSsl		# i
 	provide Srt		# i
 	provide VidStab		# ic
-	#provide ZeroMq		# i
+	provide ZeroMq		# i
 	provide Zimg		# d*
 	: # NOOP
 
@@ -634,16 +634,15 @@ compileAudioCodecs() {		# armv7
 	provide Speex		# ic
 	provide Theora		# ic
 	provide Vorbis		# ic
-		# Ogg:		  ic
 	: # NOOP
 }
 
 compileVideoCodecs() {		# armv7
-	#provide Aom		# ic
-	#provide Dav1d		# i
+	provide Aom		# ic
+	provide Dav1d		# i
 	provide Davs2		# d*
-	#provide Kvazaar		# c
-	#provide Vpx		# ic
+	provide Kvazaar		# c
+	provide Vpx		# ic
 	provide X264		# ic
 	provide X265		# ic(8bit)
 	provide Xavs2		# d*
