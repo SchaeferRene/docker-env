@@ -609,7 +609,7 @@ compileSupportingLibs() {	# armv7
 	#provide LibAss		# ic
 	#provide LibBluray	# i
 	#provide LibXcb		# i
-	#provide OpenSsl		# i
+	provide OpenSsl		# i
 	#provide Srt		# i
 	#provide VidStab		# ic
 	#provide ZeroMq		# i
@@ -626,14 +626,14 @@ compileImageLibs() {		# armv7
 }
 
 compileAudioCodecs() {		# armv7
-	#provide FdkAac		# ic
-	#provide Mp3Lame		# ic
+	provide FdkAac		# ic
+	provide Mp3Lame		# ic
 	#provide OpenCoreAMR	# c
-	#provide Opus		# ic
+	provide Opus		# ic
 	#provide Soxr		# i
 	#provide Speex		# ic
-	#provide Theora		# ic
-	#provide Vorbis		# ic
+	provide Theora		# ic
+	provide Vorbis		# ic
 		# Ogg:		  ic
 	: # NOOP
 }
@@ -644,10 +644,10 @@ compileVideoCodecs() {		# armv7
 	#provide Davs2		# d*
 	#provide Kvazaar		# c
 	#provide Vpx		# ic
-	#provide X264		# ic
-	#provide X265		# ic(8bit)
+	provide X264		# ic
+	provide X265		# ic(8bit)
 	#provide Xavs2		# d*
-	#provide Xvid		# ic
+	provide Xvid		# ic
 	: # NOOP
 
 	# * missing arm support
