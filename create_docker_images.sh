@@ -48,8 +48,10 @@ function build_image {
 	IS_SKIP_BUILD=$([[ -n "$EXISTING_DOCKER_IMAGE" ]] && [[ $IS_FORCE_BUILD -ne 0 ]] && echo "SKIP")
 	
 	if [[ -n "$IS_SKIP_BUILD" ]]; then
-		echo "... ... skipping $FEATURE: $DOCKER_ID/${IMAGE_NAME}:${ALPINE_VERSION} already exists ($EXISTING_DOCKER_IMAGE)"
-		[ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE" ] && [ -f $COMPOSE_FILE ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
+		if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE" ]; then
+			echo "... ... skipping $FEATURE: $DOCKER_ID/${IMAGE_NAME}:${ALPINE_VERSION} already exists ($EXISTING_DOCKER_IMAGE)"
+			[ -f $COMPOSE_FILE ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
+		fi
 	else
 		if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE" ]; then
 			echo
@@ -72,6 +74,7 @@ function build_image {
 						exit 10
 					fi
 				else
+					[ -n "$IS_REQUESTED_FEATURE" ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
 					DEPLOY_IMAGES+=("$COMPOSE_FILE")
 				fi
 			elif [ -x "$SCRIPT_FILE" ]; then
@@ -81,6 +84,7 @@ function build_image {
 			
 				if [ $? -eq 0 ]; then
 					tag_image "$FEATURE"
+					[ -n "$IS_REQUESTED_FEATURE" ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
 				else
 					echo "... ... build failed"
 					exit 10
