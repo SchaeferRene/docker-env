@@ -5,9 +5,9 @@ IS_BUILD_ALL=1
 IS_PUSH_IMAGES=1
 IS_FOLLOW_LOGS=1
 IS_RUN_BASE=1
+IS_FORCE_BUILD=1
 
 # holds (base) images that WILL be BUILT
-BUILD_BASE_IMAGES=()
 BUILD_IMAGES=()
 
 # holds images that WILL be DEPLOYED
@@ -15,35 +15,15 @@ DEPLOY_IMAGES=()
 
 ### Functions
 function finish {
-	echo -e "\n... returning to where we started"
 	cd "$CURRENTPATH"
-	echo -e "\ndone\n"
 }
 
 # usage
 function usage {
 	echo -e "\nusage: $0 [OPTIONS|SERVICES]"
 	echo
-	echo "This script generates an alpine base image file and other images based on it and deploys them."
-	echo
-	echo "Options:"
-	echo "  -h, --help      Display help and exit"
-	echo "  -p, --push      Push built images to docker registry"
-	echo "  -a, --all       Build (and push) all services, but only deploy specified"
-	echo "  -l, --logs      follow logs of built and deployed services"
-	echo "  -r, --run       Run created base image for further evaluation"
-	echo "Services:"
-	echo "      --ffmpeg    Build ffmpeg images"
-	echo "      --gitea     Build gitea image"
-	echo "      --mpd       Build mpd image"
-	echo "      --nginx     Build nginx image"
-	echo "      --novnc     Build noVNC image"
-	echo "      --postgres  Build postgreSQL image"
-	echo "      --ydl, --youtube-dl"
-	echo "                  Build youtube-dl image"
 
-	echo -e "\n... exiting"
-	
+	cat ./help.txt
 	exit 0
 }
 
@@ -62,64 +42,70 @@ function build_image {
 	SCRIPT_FILE="./_build/create_${FEATURE}.sh"
 	DOCKER_FILE="${FEATURE}/Dockerfile"
 	
-	IS_REQUESTED_BASE=$(case "${BUILD_BASE_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "BASE" ;; esac)
+	EXISTING_DOCKER_IMAGE=$(docker images -q "$DOCKER_ID/${IMAGE_NAME}:${ALPINE_VERSION}" 2> /dev/null)
 	IS_REQUESTED_FEATURE=$(case "${BUILD_IMAGES[@]}" in  *"${FEATURE}"*) echo -n "REQUESTED" ;; esac)
 	IS_PUSH_IMAGE=$(case "${EXTERNAL[@]}" in *"${FEATURE}"*) echo -n "NO_PUSH" ;; esac)
+	IS_SKIP_BUILD=$([[ -n "$EXISTING_DOCKER_IMAGE" ]] && [[ $IS_FORCE_BUILD -ne 0 ]] && echo "SKIP")
 	
-	if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE$IS_REQUESTED_BASE" ]; then
-		echo
+	if [[ -n "$IS_SKIP_BUILD" ]]; then
+		echo "... ... skipping $FEATURE: $DOCKER_ID/${IMAGE_NAME}:${ALPINE_VERSION} already exists ($EXISTING_DOCKER_IMAGE)"
+		[ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE" ] && [ -f $COMPOSE_FILE ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
+	else
+		if [ $IS_BUILD_ALL -eq 0 -o -n "$IS_REQUESTED_FEATURE" ]; then
+			echo
 		
-		if [ -x "$SETUP_FILE" ]; then
-			echo "... ... setting up $FEATURE"
-			source "$SETUP_FILE"
-		fi
+			if [ -x "$SETUP_FILE" ]; then
+				echo "... ... setting up $FEATURE"
+				source "$SETUP_FILE"
+			fi
 		
-		if [ -f $COMPOSE_FILE ]; then
-			if [ -z "$IS_PUSH_IMAGE" ]; then
-				echo "... ... composing $FEATURE"
-				docker-compose -f $COMPOSE_FILE build
+			if [ -f $COMPOSE_FILE ]; then
+				if [ -z "$IS_PUSH_IMAGE" ]; then
+					echo "... ... composing $FEATURE"
+					docker-compose -f $COMPOSE_FILE build
 	
+					if [ $? -eq 0 ]; then
+						tag_image "$FEATURE"
+						DEPLOY_IMAGES+=("$COMPOSE_FILE")
+					else
+						echo "... ... build failed"
+						exit 10
+					fi
+				else
+					DEPLOY_IMAGES+=("$COMPOSE_FILE")
+				fi
+			elif [ -x "$SCRIPT_FILE" ]; then
+				echo "... ... triggering $SCRIPT_FILE"
+			
+				source "$SCRIPT_FILE"
+			
 				if [ $? -eq 0 ]; then
 					tag_image "$FEATURE"
-					DEPLOY_IMAGES+=("$COMPOSE_FILE")
+				else
+					echo "... ... build failed"
+					exit 10
+				fi
+			elif [ -r "$DOCKER_FILE" ]; then
+				echo "... ... building $FEATURE"
+				docker build \
+					--pull \
+					--no-cache \
+					--network host \
+					--build-arg ARCH=$ARCH \
+					--build-arg DOCKER_ID=$DOCKER_ID \
+					-t $DOCKER_ID/$IMAGE_NAME "$FEATURE"
+			
+				if [ $? -eq 0 ]; then
+					tag_image "$FEATURE"
 				else
 					echo "... ... build failed"
 					exit 10
 				fi
 			else
-				DEPLOY_IMAGES+=("$COMPOSE_FILE")
-			fi
-		elif [ -x "$SCRIPT_FILE" ]; then
-			echo "... ... triggering $SCRIPT_FILE"
-			
-			source "$SCRIPT_FILE"
-			
-			if [ $? -eq 0 ]; then
-				tag_image "$FEATURE"
-			else
-				echo "... ... build failed"
-				exit 10
-			fi
-		elif [ -r "$DOCKER_FILE" ]; then
-			echo "... ... building $FEATURE"
-			docker build \
-				--pull \
-				--no-cache \
-				--network host \
-				--build-arg ARCH=$ARCH \
-				--build-arg DOCKER_ID=$DOCKER_ID \
-				-t $DOCKER_ID/$IMAGE_NAME "$FEATURE"
-			
-			if [ $? -eq 0 ]; then
-				tag_image "$FEATURE"
-			else
-				echo "... ... build failed"
-				exit 10
-			fi
-		else
-			echo "... ... unable to build $FEATURE"
-			echo -e "... ... skipping\n"
-		fi		
+				echo "... ... unable to build $FEATURE"
+				echo -e "... ... skipping\n"
+			fi		
+		fi
 	fi
 }
 
@@ -144,18 +130,19 @@ function push_image {
 }
 
 ### Checks
-echo -e "\n... preparing"
+# remember and change path
+CURRENTPATH=$(pwd)
+SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+trap finish EXIT
+cd "$SCRIPTPATH"
+
 
 # collect features to build (including dependent services)
-echo -e "... ... evaluating arguments"
 if [ $# -eq 0 ]; then
 	usage
 fi
-
-buildBaseImage() {
-	[ $(echo "${BUILD_BASE_IMAGES[@]}" | grep -q -- "$1"; echo $?) -eq 0 ] \
-		|| BUILD_BASE_IMAGES+=($1)
-}
+echo -e "\n... preparing"
+echo -e "... ... evaluating arguments"
 
 buildImage() {
 	[ $(echo "${BUILD_IMAGES[@]}" | grep -q -- "$1"; echo $?) -eq 0 ] \
@@ -174,36 +161,42 @@ while [[ $# -gt 0 ]]; do
         -p|--push)
         	IS_PUSH_IMAGES=0
         	;;
+	-f|--force)
+		IS_FORCE_BUILD=0
+		;;
         -l|--logs)
         	IS_FOLLOW_LOGS=0
         	;;
         -r|--run)
         	IS_RUN_BASE=0
         	;;
+	--base)
+		buildImage base
+		;;
 	--ffmpeg)
-		buildBaseImage base
-		buildBaseImage ffmpeg_alpine
+		buildImage base
+		buildImage ffmpeg_alpine
 		;;
         --gitea)
-		buildBaseImage base
+		buildImage base
 		buildImage gitea
         	;;
         --mpd)
-		buildBaseImage base
+		buildImage base
 		buildImage mpd
         	;;
         --nginx)
-		buildBaseImage base
+		buildImage base
 		buildImage nginx
         	;;
         --novnc)
-        	buildBaseImage novnc
+        	buildImage novnc
         	;;
         --postgres)
 		buildImage postgres
 		;;
         --ydl|--youtube-dl)
-		buildBaseImage base
+		buildImage base
 		buildImage ydl
         	;;
         *)
@@ -214,13 +207,6 @@ while [[ $# -gt 0 ]]; do
     # Shift after checking all the cases to get the next option
     shift
 done
-
-# remember and change path
-echo -e "... ... checking directories"
-CURRENTPATH=$(pwd)
-SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-trap finish EXIT
-cd "$SCRIPTPATH"
 
 #set -x
 
@@ -235,7 +221,7 @@ fi
 
 # warn about features not ready to be built
 echo "... ... checking features to be built"
-for FEATURE in ${BUILD_BASE_IMAGES[@]} ${BUILD_IMAGES[@]}; do
+for FEATURE in ${BUILD_IMAGES[@]}; do
 	F=$(case "${FEATURES[@]}" in  *"${FEATURE}"*) echo -n "$FEATURE" ;; esac)
 	
 	if [ -z "$F" ]; then
@@ -245,8 +231,8 @@ for FEATURE in ${BUILD_BASE_IMAGES[@]} ${BUILD_IMAGES[@]}; do
 done
 
 [ $IS_BUILD_ALL -eq 0 ] \
-	&& echo "... ... ... on agenda: " ${FEATURES[@]} \
-	|| echo "... ... ... on agenda" ${BUILD_BASE_IMAGES[@]} ${BUILD_IMAGES[@]}
+	&& echo "... ... ... on agenda:" ${FEATURES[@]} \
+	|| echo "... ... ... on agenda:" ${BUILD_IMAGES[@]}
 
 # check required programs
 echo "... ... checking required programs"
@@ -277,14 +263,9 @@ then
 fi
 
 # start building images
-echo -e "\n... building base images"
-for f in ${BASE_IMAGES[@]}; do
-	build_image "$f";
-done
-
 echo -e "\n... building features"
 for f in ${FEATURES[@]}; do
-	build_image "$f";
+	build_image "$f"
 done
 
 DEPLOY_FILES=$(for F in ${DEPLOY_IMAGES[@]}; do echo -n "-f $F "; done)

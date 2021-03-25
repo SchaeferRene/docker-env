@@ -545,7 +545,7 @@ compileFfmpeg() {
 	FFMPEG_OPTIONS="--enable-shared --disable-static --enable-pic --enable-avresample"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --disable-debug --disable-doc --disable-ffplay"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-gpl --enable-nonfree --enable-version3"
-	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-small --enable-postproc"
+	FFMPEG_OPTIONS="$FFMPEG_OPTIONS --enable-postproc"
 	FFMPEG_OPTIONS="$FFMPEG_OPTIONS $FFMPEG_FEATURES"
 
 	echo "--- Compiling ffmpeg with features $FFMPEG_OPTIONS"

@@ -15,19 +15,21 @@ export DOCKER_BUILDKIT=1
 ## prepare build vars
 export PULSE_SOCKET
 
-# base images holds all images that are considered base images
-# i.e. image layers to base other images on, hence must be built first
-BASE_IMAGES=(
-	base
-	ffmpeg_alpine
-	novnc
-)
-
 ## external lists all features that reuse external images
 EXTERNAL=(postgres)
 
-## features lists all features that CAN be built
-FEATURES=(${EXTERNAL[*]})
+## features lists all features that CAN be built in order of dependency (where applicable)
+FEATURES=(
+	${EXTERNAL[*]}
+	base
+	ffmpeg_alpine
+        ydl
+
+        gitea
+	mpd
+	nginx
+	novnc
+)
 
 ## common
 ### current user/group and path
@@ -36,6 +38,12 @@ export GUID=$(id -g)
 
 ### hostname
 export HOSTNAME=$(cat /etc/hostname)
+
+### image names (where different from <feature>-alpine-<arch>
+export BASE_IMAGE="alpine-base-$ARCH"
+export FFMPEG_ALPINE_RAW_IMAGE="ffmpeg-rawbuild-alpine-$ARCH"
+export FFMPEG_ALPINE_IMAGE="ffmpeg-alpine-$ARCH"
+export YDL_IMAGE="youtube-dl-alpine-$ARCH"
 
 for FILENAME in _check/check_*.sh; do
 	#echo "... ... sourcing $FILENAME"

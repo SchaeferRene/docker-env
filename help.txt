@@ -1,0 +1,19 @@
+This script generates an alpine base image file and other images based on it and deploys them.
+
+Options:
+  -h, --help      Display help and exit
+  -p, --push      Push built images to docker registry
+  -a, --all       Build (and push) all services, but only deploy specified
+  -f, --force     Force rebuilding existing images
+  -l, --logs      follow logs of built and deployed services
+  -r, --run       Run created base image for further evaluation
+Services:
+      --ffmpeg    Build ffmpeg images
+      --gitea     Build gitea image
+      --mpd       Build mpd image
+      --nginx     Build nginx image
+      --novnc     Build noVNC image
+      --postgres  Build postgreSQL image
+      --ydl, --youtube-dl
+                  Build youtube-dl image
+
