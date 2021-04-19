@@ -84,7 +84,7 @@ function build_image {
 			
 				if [ $? -eq 0 ]; then
 					tag_image "$FEATURE"
-					[ -n "$IS_REQUESTED_FEATURE" ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
+					[ -n "$IS_REQUESTED_FEATURE" ] && [ -f $COMPOSE_FILE ] && DEPLOY_IMAGES+=("$COMPOSE_FILE")
 				else
 					echo "... ... build failed"
 					exit 10
