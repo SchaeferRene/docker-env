@@ -6,6 +6,7 @@ IS_PUSH_IMAGES=1
 IS_FOLLOW_LOGS=1
 IS_RUN_BASE=1
 IS_FORCE_BUILD=1
+IS_SKIP_DEPLOY=1
 
 # holds (base) images that WILL be BUILT
 BUILD_IMAGES=()
@@ -174,6 +175,9 @@ while [[ $# -gt 0 ]]; do
         -r|--run)
         	IS_RUN_BASE=0
         	;;
+        -s|--skip-deployment)
+		IS_SKIP_DEPLOY=0
+		;;
 	--base)
 		buildImage base
 		;;
@@ -274,8 +278,7 @@ done
 
 DEPLOY_FILES=$(for F in ${DEPLOY_IMAGES[@]}; do echo -n "-f $F "; done)
 
-if [ -n "$DEPLOY_FILES" ];
-then
+if [ -n "$DEPLOY_FILES" ] && [ $IS_SKIP_DEPLOY -eq 1 ] ; then
 	echo -e "\n... deploying ${DEPLOY_IMAGES[@]}"
 	docker-compose $DEPLOY_FILES up -d $DEPLOY_SWITCHES
 fi

@@ -7,6 +7,8 @@ Options:
   -f, --force     Force rebuilding existing images
   -l, --logs      follow logs of built and deployed services
   -r, --run       Run created base image for further evaluation
+  -s, --skip-deployment
+                  Do not deploy build images
 Services:
       --ffmpeg    Build ffmpeg images
       --gitea     Build gitea image
