@@ -1,4 +1,4 @@
-_Note:_ Updates are currently broken (at least for 32bit ARM devices) by the [Alpine Update 3.13.0](https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.13.0) with its time64 requirements and `docker build` not supporting the `--security-opt` flag. Dunno when/if I'll find the time to get this fixed.
+_Note:_ Updates are currently broken (at least for 32bit ARM devices) by the [Alpine Update 3.13.0](https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.13.0) with its time64 requirements and `docker build` / `docker-compose` not supporting setting seccomp profile via the `--security-opt` flag. Dunno when/if I'll find the time to get this fixed.
 
 <hr/>
 
